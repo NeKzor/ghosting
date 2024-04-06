@@ -36,11 +36,11 @@
 - [x] Ping
 - [x] Connect
 - [x] Disconnect
-- ~~[x] Stop Server~~
+- [ ] Stop Server
 - [x] Map Change
 - [ ] Heart Beat
 - [x] Message
-- [ ] Countdown
+- [x] Countdown
 - [ ] Update
 - [ ] Speedrun Finish
 - [ ] Model Change
@@ -221,6 +221,40 @@ sequenceDiagram
 | [header](#header) | u32     | `MESSAGE`   |
 | id                | u32     |             |
 | message           | CString |             |
+
+### Countdown
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+
+    Server->>Clients: countdown_packet (broadcast)
+
+    Server->>Client: confirm_countdown_packet
+    Client->>Serve: confirm_countdown_packet (id = 0)
+```
+
+#### countdown_packet
+
+| Field             | Type    | Description |
+| ----------------- | ------- | ----------- |
+| [header](#header) | u32     | `CONFIRM`   |
+| id                | u32     | 0           |
+| step              | u32     | 0           |
+| duration          | u32     |             |
+| pre_commands      | cstring |             |
+| post_commands     | cstring |             |
+
+#### confirm_countdown_packet
+
+| Field             | Type | Description |
+| ----------------- | ---- | ----------- |
+| [header](#header) | u32  | `CONFIRM`   |
+| id                | u32  |             |
+| step              | u32  | 1           |
 
 ## Structs
 

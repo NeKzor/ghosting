@@ -5,14 +5,23 @@
 
 import { tty } from 'cliffy/ansi/tty.ts';
 import { Input } from 'cliffy/prompt/input.ts';
+import { Select } from 'cliffy/prompt/select.ts';
 import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
-import { IDataGhost, IGhostEntity, MessagePacket } from './protocol.ts';
-import { DisconnectPacket, PingPacket } from './protocol.ts';
-import { ConfirmConnectionPacket, ConnectionPacket, ConnectPacket, Header } from './protocol.ts';
-import { getAvailablePort } from '@std/net';
-import { Select } from 'cliffy/prompt/select.ts';
-import { MapChangePacket } from './protocol.ts';
+import {
+  ConfirmConnectionPacket,
+  ConfirmCountdownPacket,
+  ConnectionPacket,
+  ConnectPacket,
+  CountdownPacket,
+  DisconnectPacket,
+  Header,
+  IDataGhost,
+  IGhostEntity,
+  MapChangePacket,
+  MessagePacket,
+  PingPacket,
+} from './protocol.ts';
 
 const {
   server: {
@@ -53,7 +62,7 @@ const tcp = await (async () => {
 })();
 
 // const udp = Deno.listenDatagram({
-//   port: getAvailablePort({ preferredPort: port + 1 }),
+//   port: port + 1,
 //   transport: 'udp',
 // });
 
@@ -238,8 +247,22 @@ const PacketHandler = {
     }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(CountdownPacket).unpack(data);
+    const step = data[8];
+    if (step === 0) {
+      const { duration, pre_commands, post_commands } = struct(CountdownPacket).unpack(data);
+
+      console.log(`Countdown setup: ${duration}, ${pre_commands}, ${post_commands}`);
+
+      await conn.write(
+        struct(ConfirmCountdownPacket).pack({
+          header: Header.COUNTDOWN,
+          id: state.id,
+          step: 1,
+        }),
+      );
+    } else {
+      console.log(`Started countdown!`);
+    }
   },
   [Header.UPDATE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
@@ -288,68 +311,70 @@ Deno.addSignalListener('SIGINT', disconnect);
 try {
   await connect();
 
-  while (true) {
-    const command: string = await Select.prompt({
-      message: 'Command:',
-      options: [
-        { name: 'exit', value: 'exit' },
-        { name: 'state', value: 'state' },
-        { name: 'ping', value: 'ping' },
-        { name: 'disconnect', value: 'disconnect' },
-        { name: 'map_change', value: 'map_change' },
-        { name: 'message', value: 'message' },
-      ],
-    });
+  const commands = {
+    exit: () => {
+      disconnect();
+      Deno.exit(0);
+    },
+    state: () => {
+      console.dir(state);
+    },
+    ping: async () => {
+      await sendPing();
+    },
+    disconnect: async () => {
+      await tcp.write(
+        struct(DisconnectPacket).pack({
+          header: Header.DISCONNECT,
+          id: state.id,
+        }),
+      );
+    },
+    map_change: async () => {
+      await tcp.write(
+        struct(MapChangePacket).pack({
+          header: Header.MAP_CHANGE,
+          id: state.id,
+          map_name: 'sp_a1_intro2',
+          ticks: Math.floor(Math.random() * 2) ? 0xffffffff : 123,
+          ticks_total: 456_789,
+        }),
+      );
+    },
+    message: async () => {
+      const message: string = await Input.prompt('Enter a message:');
+      await tcp.write(
+        struct(MessagePacket).pack({
+          header: Header.MESSAGE,
+          id: state.id,
+          message,
+        }),
+      );
+    },
+    countdown: async () => {
+      await tcp.write(
+        struct(CountdownPacket).pack({
+          header: Header.MESSAGE,
+          id: state.id,
+          step: 0,
+          duration: 10,
+          pre_commands: 'sv_cheats 1',
+          post_commands: 'sv_cheats 0',
+        }),
+      );
+    },
+  };
 
-    switch (command) {
-      case 'exit': {
-        disconnect();
-        Deno.exit(0);
-        break;
-      }
-      case 'state': {
-        console.dir(state);
-        break;
-      }
-      case 'ping': {
-        await sendPing();
-        break;
-      }
-      case 'disconnect': {
-        await tcp.write(
-          struct(DisconnectPacket).pack({
-            header: Header.DISCONNECT,
-            id: state.id,
-          }),
-        );
-        break;
-      }
-      case 'map_change': {
-        await tcp.write(
-          struct(MapChangePacket).pack({
-            header: Header.MAP_CHANGE,
-            id: state.id,
-            map_name: 'sp_a1_intro2',
-            ticks: Math.floor(Math.random() * 2) ? 0xffffffff : 123,
-            ticks_total: 456_789,
-          }),
-        );
-        break;
-      }
-      case 'message': {
-        const message: string = await Input.prompt('Enter a message:');
-        await tcp.write(
-          struct(MessagePacket).pack({
-            header: Header.MESSAGE,
-            id: state.id,
-            message,
-          }),
-        );
-        break;
-      }
-      default:
-        break;
-    }
+  const commandPrompt = {
+    message: 'Command:',
+    search: true,
+    options: Object.keys(commands).map((value) => ({ name: value, value })),
+  };
+
+  while (true) {
+    const command = await Select.prompt(commandPrompt) as unknown as keyof typeof commands;
+    const handler = commands[command];
+    handler();
   }
 } catch (err) {
   if (!(err instanceof Deno.errors.Interrupted)) {

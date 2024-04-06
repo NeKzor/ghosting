@@ -4,8 +4,13 @@
 import { IClient } from './protocol.ts';
 
 export class State {
-  public lastId = 1;
-  public clients: IClient[] = [];
-  public acceptingSpectators = true;
-  public acceptingPlayers = true;
+  lastId = 1;
+  clients: IClient[] = [];
+  acceptingSpectators = true;
+  acceptingPlayers = true;
+  countdown = {
+    preCommands: '',
+    postCommands: '',
+    duration: 0,
+  };
 }

@@ -189,3 +189,18 @@ export const MessagePacket = {
   id: u32,
   message: cstring,
 };
+
+export const CountdownPacket = {
+  header: u32,
+  id: u32,
+  step: u8,
+  duration: u32,
+  pre_commands: cstring,
+  post_commands: cstring,
+};
+
+export const ConfirmCountdownPacket = {
+  header: u32,
+  id: u32,
+  step: u8,
+};

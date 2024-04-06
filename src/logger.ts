@@ -50,13 +50,21 @@ const formatArgs = (args: string | any | any[]): string => {
   }).join(' ');
 };
 
-export const installLogger = (filename: string) => {
+export const installLogger = (options: {
+  console: boolean;
+  file: boolean;
+  filename: string;
+}) => {
   try {
-    Deno.mkdirSync(dirname(filename), { recursive: true });
+    Deno.mkdirSync(dirname(options.filename), { recursive: true });
   } catch (err) {
     console.log(err);
     Deno.exit(1);
   }
+
+  const handlers: string[] = [];
+  options.console && handlers.push('console');
+  options.file && handlers.push('file');
 
   _log.setup({
     handlers: {
@@ -71,7 +79,7 @@ export const installLogger = (filename: string) => {
       file: new FileLogger('DEBUG', {
         maxBytes: 100 * 1024 * 1024,
         maxBackupCount: 7,
-        filename,
+        filename: options.filename,
         formatter: ({ datetime, levelName, msg, args }) => {
           return `${formatDatetime(datetime)} ${levelName} ${msg}${args.length ? ' ' + formatArgs(args) : ''}`;
         },
@@ -80,7 +88,7 @@ export const installLogger = (filename: string) => {
     loggers: {
       default: {
         level: 'DEBUG',
-        handlers: ['console', 'file'],
+        handlers,
       },
     },
   });

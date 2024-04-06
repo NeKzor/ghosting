@@ -3,7 +3,8 @@ hostname = "127.0.0.1"
 port = 53000
 
 [logging]
-enabled = true
+console = false
+file = false
 filename = "logs/server.log"
 
 [client]

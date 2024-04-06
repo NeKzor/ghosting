@@ -3,13 +3,22 @@
 
 // deno-lint-ignore-file no-unused-vars require-await
 
+/// <reference no-default-lib="true" />
+/// <reference lib="deno.worker" />
+/// <reference lib="deno.unstable" />
+
 import { struct, TypeOf } from './byte_types.ts';
 import { getConfig } from './config.ts';
+import { ServerEvent } from './events.ts';
+import { ServerEventType } from './events.ts';
+import { CommandEvent, EventType } from './events.ts';
 import { installLogger, log } from './logger.ts';
 import {
   ConfirmConnectionPacket,
+  ConfirmCountdownPacket,
   ConnectionPacket,
   ConnectPacket,
+  CountdownPacket,
   DisconnectPacket,
   Header,
   IClient,
@@ -24,7 +33,7 @@ import { State } from './state.ts';
 
 const { server: { hostname, port }, logging } = await getConfig();
 
-logging.enabled && installLogger(logging.filename);
+installLogger(logging);
 
 const state = new State();
 
@@ -268,8 +277,17 @@ const PacketHandler = {
     }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(CountdownPacket).unpack(data);
+    const id = data[4]!;
+    const client = getClientById(id);
+    if (client) {
+      client.tcp_socket?.write(
+        struct(ConfirmCountdownPacket).pack({
+          header: Header.COUNTDOWN,
+          id: 0,
+          step: 1,
+        }),
+      );
+    }
   },
   [Header.UPDATE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
@@ -288,5 +306,76 @@ const PacketHandler = {
     //const packet = Struct(Color_ChangePacket).unpack(data);
   },
 };
+
+const emit = (message: ServerEvent) => self.postMessage(message);
+
+self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) => {
+  switch (data.type) {
+    case EventType.GetServerList: {
+      emit({ type: ServerEventType.ServerList, clients: state.clients });
+      break;
+    }
+    case EventType.GetServerState: {
+      emit({ type: ServerEventType.ServerState, state });
+      break;
+    }
+    case EventType.SetCountdown: {
+      state.countdown.preCommands = data.preCommands;
+      state.countdown.postCommands = data.postCommands;
+      state.countdown.duration = data.duration;
+      break;
+    }
+    case EventType.StartCountdown: {
+      const { duration, preCommands, postCommands } = state.countdown;
+      await broadcast(
+        struct(CountdownPacket).pack({
+          header: Header.COUNTDOWN,
+          id: 0,
+          step: 0,
+          duration,
+          pre_commands: preCommands,
+          post_commands: postCommands,
+        }),
+      );
+      break;
+    }
+    case EventType.Disconnect: {
+      //
+      break;
+    }
+    case EventType.DisconnectId: {
+      // TODO
+      break;
+    }
+    case EventType.Ban: {
+      // TODO
+      break;
+    }
+    case EventType.BanId: {
+      // TODO
+      break;
+    }
+    case EventType.AcceptPlayers: {
+      state.acceptingPlayers = true;
+      break;
+    }
+    case EventType.RefusePlayers: {
+      state.acceptingPlayers = false;
+      break;
+    }
+    case EventType.AcceptSpectators: {
+      state.acceptingSpectators = true;
+      break;
+    }
+    case EventType.RefuseSpectators: {
+      state.acceptingSpectators = true;
+      break;
+    }
+    case EventType.ServerMessage: {
+      // TODO
+      break;
+    }
+  }
+});
 
 await Promise.all([listenTcp(), listenUdp()]);
