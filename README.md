@@ -20,6 +20,9 @@
     - [map_change_packet](#map_change_packet)
   - [Message](#message)
     - [message_packet](#message_packet)
+  - [Countdown](#countdown)
+    - [countdown_packet](#countdown_packet)
+    - [confirm_countdown_packet](#confirm_countdown_packet)
 - [Enums](#enums)
   - [HEADER](#header)
 - [Structs](#structs)
@@ -67,7 +70,7 @@
 | [MAP_CHANGE](#map-change) | 5     |
 | HEART_BEAT                | 6     |
 | [MESSAGE](#message)       | 7     |
-| COUNTDOWN                 | 8     |
+| [COUNTDOWN](#countdown)   | 8     |
 | UPDATE                    | 9     |
 | SPEEDRUN_FINISH           | 10    |
 | MODEL_CHANGE              | 11    |
@@ -233,15 +236,15 @@ sequenceDiagram
 
     Server->>Clients: countdown_packet (broadcast)
 
-    Server->>Client: confirm_countdown_packet
-    Client->>Serve: confirm_countdown_packet (id = 0)
+    Client->>Server: confirm_countdown_packet
+    Server->>Client: confirm_countdown_packet (id = 0)
 ```
 
 #### countdown_packet
 
 | Field             | Type    | Description |
 | ----------------- | ------- | ----------- |
-| [header](#header) | u32     | `CONFIRM`   |
+| [header](#header) | u32     | `COUNTDOWN` |
 | id                | u32     | 0           |
 | step              | u32     | 0           |
 | duration          | u32     |             |
@@ -250,11 +253,11 @@ sequenceDiagram
 
 #### confirm_countdown_packet
 
-| Field             | Type | Description |
-| ----------------- | ---- | ----------- |
-| [header](#header) | u32  | `CONFIRM`   |
-| id                | u32  |             |
-| step              | u32  | 1           |
+| Field             | Type | Description    |
+| ----------------- | ---- | -------------- |
+| [header](#header) | u32  | `COUNTDOWN`    |
+| id                | u32  | Server sends 0 |
+| step              | u32  | 1              |
 
 ## Structs
 
