@@ -3,19 +3,51 @@
   "packages": {
     "specifiers": {
       "jsr:@denosaurs/byte-type@^0.4.0": "jsr:@denosaurs/byte-type@0.4.0",
+      "jsr:@std/assert@^0.221.0": "jsr:@std/assert@0.221.0",
       "jsr:@std/collections@^0.221.0": "jsr:@std/collections@0.221.0",
+      "jsr:@std/fmt@^0.221.0": "jsr:@std/fmt@0.221.0",
+      "jsr:@std/fs@^0.221.0": "jsr:@std/fs@0.221.0",
+      "jsr:@std/io@^0.221.0": "jsr:@std/io@0.221.0",
+      "jsr:@std/log@^0.221.0": "jsr:@std/log@0.221.0",
       "jsr:@std/net@^0.221.0": "jsr:@std/net@0.221.0",
+      "jsr:@std/path@^0.221.0": "jsr:@std/path@0.221.0",
       "jsr:@std/toml@^0.221.0": "jsr:@std/toml@0.221.0"
     },
     "jsr": {
       "@denosaurs/byte-type@0.4.0": {
         "integrity": "9d6816f4bc3f2dec579007fdaf16688cfa8f070e69f12542997d07c877a1e5c7"
       },
+      "@std/assert@0.221.0": {
+        "integrity": "a5f1aa6e7909dbea271754fd4ab3f4e687aeff4873b4cef9a320af813adb489a"
+      },
       "@std/collections@0.221.0": {
         "integrity": "789a365bb79b06c4da79d2b93fe32ddfe03b93ab083e72c1de96303d12f84be5"
       },
+      "@std/fmt@0.221.0": {
+        "integrity": "379fed69bdd9731110f26b9085aeb740606b20428ce6af31ef6bd45ef8efa62a"
+      },
+      "@std/fs@0.221.0": {
+        "integrity": "028044450299de8ed5a716ade4e6d524399f035513b85913794f4e81f07da286"
+      },
+      "@std/io@0.221.0": {
+        "integrity": "faf7f8700d46ab527fa05cc6167f4b97701a06c413024431c6b4d207caa010da"
+      },
+      "@std/log@0.221.0": {
+        "integrity": "562cd3514c4e12767337fca8c5a4b8eed01c49f0e19551d34ea376b243d2c530",
+        "dependencies": [
+          "jsr:@std/assert@^0.221.0",
+          "jsr:@std/fs@^0.221.0",
+          "jsr:@std/io@^0.221.0"
+        ]
+      },
       "@std/net@0.221.0": {
         "integrity": "8de56b3cab377423344b9dfdfaac7479c6c9519da1daa5c152483446afcb0dab"
+      },
+      "@std/path@0.221.0": {
+        "integrity": "0a36f6b17314ef653a3a1649740cc8db51b25a133ecfe838f20b79a56ebe0095",
+        "dependencies": [
+          "jsr:@std/assert@^0.221.0"
+        ]
       },
       "@std/toml@0.221.0": {
         "integrity": "d64a00b57627b22eff56346d5fca6a23dd969e8df8671b760be954177a24ea84",
@@ -58,7 +90,10 @@
   "workspace": {
     "dependencies": [
       "jsr:@denosaurs/byte-type@^0.4.0",
+      "jsr:@std/fmt@^0.221.0",
+      "jsr:@std/log@^0.221.0",
       "jsr:@std/net@^0.221.0",
+      "jsr:@std/path@^0.221.0",
       "jsr:@std/toml@^0.221.0"
     ]
   }

@@ -2,6 +2,10 @@
 hostname = "127.0.0.1"
 port = 53000
 
+[logging]
+enabled = true
+filename = "logs/server.log"
+
 [client]
 name = "NeKz"
 model_name = "models/props/food_can/food_can_open.mdl"

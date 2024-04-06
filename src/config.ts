@@ -12,6 +12,10 @@ export const getConfig = async () => {
       hostname: string;
       port: number;
     };
+    logging: {
+      enabled: boolean;
+      filename: string;
+    };
     client: {
       name: string;
       model_name: string;

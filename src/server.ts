@@ -5,6 +5,7 @@
 
 import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
+import { installLogger, log } from './logger.ts';
 import {
   ConfirmConnectionPacket,
   ConnectionPacket,
@@ -17,7 +18,9 @@ import {
 } from './protocol.ts';
 import { State } from './state.ts';
 
-const { server: { hostname, port } } = await getConfig();
+const { server: { hostname, port }, logging } = await getConfig();
+
+logging.enabled && installLogger(logging.filename);
 
 const state = new State();
 
@@ -37,13 +40,13 @@ const udp = Deno.listenDatagram({
 
 const listenTcp = async () => {
   for await (const conn of tcp) {
-    handleConnection(conn).catch(console.error);
+    handleConnection(conn).catch(log.error);
   }
 };
 
 const handleConnection = async (conn: Deno.Conn) => {
   try {
-    console.log('NEW CONNECTION');
+    log.info('NEW CONNECTION');
     const connection = new Uint8Array(1024);
     await conn.read(connection);
 
@@ -55,10 +58,10 @@ const handleConnection = async (conn: Deno.Conn) => {
     const data = new Uint8Array(1024);
     while (await conn.read(data)) {
       const header = data[0]!;
-      console.log(conn.remoteAddr, header);
+      log.info(conn.remoteAddr, header);
 
       if (header > Header.LAST) {
-        console.log(`Ignoring invalid header value ${header}`);
+        log.info(`Ignoring invalid header value ${header}`);
         return;
       }
 
@@ -69,14 +72,14 @@ const handleConnection = async (conn: Deno.Conn) => {
     conn.close();
   } catch (err) {
     if (!(err instanceof Deno.errors.BrokenPipe)) {
-      console.error(err);
+      log.error(err);
     }
   }
 };
 
 const listenUdp = async () => {
   for await (const [data, address] of udp) {
-    console.log(data, address);
+    log.info(data, address);
   }
 };
 
@@ -91,7 +94,7 @@ const broadcast = async (packet: Uint8Array) => {
       }
     } catch (err) {
       if (!(err instanceof Deno.errors.BadResource)) {
-        console.error(err);
+        log.error(err);
       }
     }
   }
@@ -146,7 +149,7 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
     }),
   );
 
-  //console.log(`New client:`, client);
+  //log.info(`New client:`, client);
 
   state.clients.push(client);
 
@@ -174,7 +177,7 @@ const PacketHandler = {
     /* no-op */
   },
   [Header.DISCONNECT]: async (data: Uint8Array, conn: Deno.Conn) => {
-    console.log(`Disconnect`);
+    log.info(`Disconnect`);
     // TODO
     //const packet = Struct(DisconnectPacket).unpack(data);
   },
