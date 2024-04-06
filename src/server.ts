@@ -3,7 +3,7 @@
 
 // deno-lint-ignore-file no-unused-vars require-await
 
-import { struct } from './byte_types.ts';
+import { struct, TypeOf } from './byte_types.ts';
 import { getConfig } from './config.ts';
 import { installLogger, log } from './logger.ts';
 import {
@@ -13,7 +13,9 @@ import {
   DisconnectPacket,
   Header,
   IClient,
+  IDataGhost,
   IGhostEntity,
+  MapChangePacket,
   PingEchoPacket,
   PingPacket,
 } from './protocol.ts';
@@ -117,7 +119,11 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
     remote.hostname,
     remote.port,
     packet.name,
-    packet.data,
+    new IDataGhost(
+      packet.data.position,
+      packet.data.view_angle,
+      packet.data.data,
+    ),
     packet.model_name,
     packet.current_map,
     conn,
@@ -190,6 +196,31 @@ const disconnectPlayer = async (clientPlayer: IClient, reason: string) => {
   state.clients = clients;
 };
 
+const handleMapChange = async ({ id, map_name, ticks, ticks_total }: TypeOf<typeof MapChangePacket>) => {
+  const packet = struct(MapChangePacket).pack({
+    header: Header.MAP_CHANGE,
+    id,
+    map_name,
+    ticks,
+    ticks_total,
+  });
+
+  for (const client of state.clients) {
+    try {
+      if (client.id !== id) {
+        await client.tcp_socket?.write(packet);
+      } else {
+        client.current_map = map_name;
+        log.info(`${client.name} is now on ${client.current_map}`);
+      }
+    } catch (err) {
+      if (!(err instanceof Deno.errors.BadResource)) {
+        log.error(err);
+      }
+    }
+  }
+};
+
 const PacketHandler = {
   [Header.NONE]: async (_data: Uint8Array, _conn: Deno.Conn) => {
     /* no-op */
@@ -213,12 +244,10 @@ const PacketHandler = {
     client && await disconnectPlayer(client, 'requested');
   },
   [Header.STOP_SERVER]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(Stop_ServerPacket).unpack(data);
+    /* very questionable */
   },
   [Header.MAP_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(Map_ChangePacket).unpack(data);
+    await handleMapChange(struct(MapChangePacket).unpack(data));
   },
   [Header.HEART_BEAT]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO

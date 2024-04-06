@@ -1,7 +1,7 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { bool, cstring, Struct, u32 } from '@denosaurs/byte-type';
+import { bool, cstring, Struct, u32, u8 } from '@denosaurs/byte-type';
 import { PhantomData, VariableArray } from './byte_types.ts';
 
 export enum Header {
@@ -30,9 +30,22 @@ export class IDataGhost {
   constructor(
     public position: IVector,
     public view_angle: IVector,
-    public view_offset: number,
-    public grounded: boolean,
+    public data: number,
   ) {}
+
+  get viewOffset(): number {
+    return this.data & 0b0111_1111;
+  }
+  set viewOffset(value: number) {
+    this.data |= value & 0b0111_1111;
+  }
+
+  get grounded(): boolean {
+    return (this.data & 0b1000_0000) !== 0;
+  }
+  set grounded(value: boolean) {
+    this.data |= value ? 0b1000_0000 : 0b0000_0000;
+  }
 }
 
 export class IColor {
@@ -98,8 +111,7 @@ export const Color = {
 export const DataGhost = {
   position: new Struct(Vector),
   view_angle: new Struct(Vector),
-  view_offset: u32,
-  grounded: bool,
+  data: u8,
 };
 
 export const ConnectionPacket = {
@@ -153,4 +165,12 @@ export const PingEchoPacket = {
 export const DisconnectPacket = {
   header: u32,
   id: u32,
+};
+
+export const MapChangePacket = {
+  header: u32,
+  id: u32,
+  map_name: cstring,
+  ticks: u32,
+  ticks_total: u32,
 };

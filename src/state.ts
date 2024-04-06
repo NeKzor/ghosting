@@ -1,7 +1,7 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { IClient } from './protocol.ts';
+import { IClient, IDataGhost } from './protocol.ts';
 
 export class State {
   public lastId = 1;
@@ -15,20 +15,19 @@ export class State {
       ip: '127.0.0.1',
       port: 53_000,
       name: 'Server',
-      data: {
-        position: {
+      data: new IDataGhost(
+        {
           x: 0,
           y: 0,
           z: 0,
         },
-        view_angle: {
+        {
           x: 0,
           y: 0,
           z: 0,
         },
-        view_offset: 0,
-        grounded: true,
-      },
+        0b0000_0000,
+      ),
       model_name: 'models/props/food_can/food_can_open.mdl',
       current_map: 'sp_a1_intro1',
       tcp_socket: undefined,

@@ -1,7 +1,7 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { InnerType, type Options, SizedType, Struct as S, u32, UnsizedType } from '@denosaurs/byte-type';
+import { InnerType, type Options, SizedType, Struct, u32, UnsizedType } from '@denosaurs/byte-type';
 
 /**
  * Variable Length Array (VLA).
@@ -83,6 +83,9 @@ export class PhantomData<T> extends SizedType<T> {
   }
 }
 
+/**
+ * Serialize/deserialize structs.
+ */
 export const struct = <
   T extends Record<string, UnsizedType<unknown>>,
   V extends { [K in keyof T]: InnerType<T[K]> } = {
@@ -92,11 +95,38 @@ export const struct = <
   return {
     pack: (value: V) => {
       const buffer = new ArrayBuffer(size);
-      new S(layout).write(value, new DataView(buffer));
+      new Struct(layout).write(value, new DataView(buffer));
       return new Uint8Array(buffer);
     },
+    packSized: (value: V) => {
+      const buffer = new ArrayBuffer(size);
+      const options = { byteOffset: 0 };
+      new Struct(layout).write(value, new DataView(buffer), options);
+      return [new Uint8Array(buffer), options.byteOffset];
+    },
+    packResized: (value: V) => {
+      const buffer = new ArrayBuffer(size);
+      const options = { byteOffset: 0 };
+      new Struct(layout).write(value, new DataView(buffer), options);
+      return new Uint8Array(buffer).slice(0, options.byteOffset);
+    },
     unpack: (data: Uint8Array) => {
-      return new S(layout).read(new DataView(data.buffer));
+      return new Struct(layout).read(new DataView(data.buffer));
+    },
+    unpackSized: (data: Uint8Array) => {
+      const options = { byteOffset: 0 };
+      const value = new Struct(layout).read(new DataView(data.buffer));
+      return [value, options.byteOffset];
     },
   };
 };
+
+/**
+ * Operator typeof for structs.
+ */
+export type TypeOf<
+  T extends Record<string, UnsizedType<unknown>>,
+  V extends { [K in keyof T]: InnerType<T[K]> } = {
+    [K in keyof T]: InnerType<T[K]>;
+  },
+> = V;

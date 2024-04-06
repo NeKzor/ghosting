@@ -11,6 +11,7 @@ import { DisconnectPacket, PingPacket } from './protocol.ts';
 import { ConfirmConnectionPacket, ConnectionPacket, ConnectPacket, Header } from './protocol.ts';
 import { getAvailablePort } from '@std/net';
 import { Select } from 'cliffy/prompt/select.ts';
+import { MapChangePacket } from './protocol.ts';
 
 const {
   server: {
@@ -78,8 +79,7 @@ const connect = async () => {
           y: 0,
           z: 0,
         },
-        view_offset: 0,
-        grounded: false,
+        data: 0b0000_0000,
       },
       model_name,
       current_map,
@@ -136,6 +136,10 @@ const sendPing = async () => {
   );
 };
 
+const getGhostById = (id: number) => {
+  return state.ghostPool.find((ghost) => ghost.id === id);
+};
+
 const PacketHandler = {
   [Header.NONE]: async (_data: Uint8Array, _conn: Deno.Conn) => {
     /* no-op */
@@ -172,9 +176,19 @@ const PacketHandler = {
   [Header.STOP_SERVER]: async (data: Uint8Array, conn: Deno.Conn) => {
     /* no-op */
   },
-  [Header.MAP_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(Map_ChangePacket).unpack(data);
+  [Header.MAP_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = struct(MapChangePacket).unpack(data);
+    const ghost = getGhostById(packet.id);
+    if (ghost) {
+      const { map_name, ticks } = packet;
+      ghost.current_map = map_name;
+
+      if (ticks === 0xffffffff) {
+        console.log(`${ghost.name} is now on ${map_name}`);
+      } else {
+        console.log(`${ghost.name} is now on ${map_name} (${ticks} -> ${packet.ticks_total})`);
+      }
+    }
   },
   [Header.HEART_BEAT]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
@@ -242,6 +256,7 @@ try {
         { name: 'exit', value: 'exit' },
         { name: 'ping', value: 'ping' },
         { name: 'disconnect', value: 'disconnect' },
+        { name: 'map_change', value: 'map_change' },
       ],
     });
 
@@ -260,6 +275,18 @@ try {
           struct(DisconnectPacket).pack({
             header: Header.DISCONNECT,
             id: state.id,
+          }),
+        );
+        break;
+      }
+      case 'map_change': {
+        await tcp.write(
+          struct(MapChangePacket).pack({
+            header: Header.MAP_CHANGE,
+            id: state.id,
+            map_name: 'sp_a1_intro2',
+            ticks: Math.floor(Math.random() * 2) ? 0xffffffff : 123,
+            ticks_total: 456_789,
           }),
         );
         break;

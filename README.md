@@ -6,14 +6,18 @@
 
 - [Status](#status)
 - [Protocol](#protocol)
+  - [Header](#header)
   - [Connect](#connect)
     - [connection_packet](#connection_packet)
     - [confirm_connection_packet](#confirm_connection_packet)
+    - [connect_packet](#connect_packet)
   - [Disconnect](#connect)
     - [disconnect_packet](#disconnect_packet)
   - [Ping](#ping)
     - [ping_packet](#ping_packet)
     - [ping_echo_packet](#ping_echo_packet)
+  - [Map Change](#map_change)
+    - [map_change_packet](#map_change_packet)
 - [Enums](#enums)
   - [HEADER](#header)
 - [Structs](#structs)
@@ -30,8 +34,8 @@
 - [x] Ping
 - [x] Connect
 - [x] Disconnect
-- [ ] Stop Server
-- [ ] Map Change
+- ~~[x] Stop Server~~
+- [x] Map Change
 - [ ] Heart Beat
 - [ ] Message
 - [ ] Countdown
@@ -44,10 +48,12 @@
 
 - ID is not a unique identifier
 - Header value gets ignored when starting a connection
-- `STOP_SERVER` is also implemented client-side
+- Questionable `STOP_SERVER` implementation
 - Disconnect is checked by IP
 
 ## Protocol
+
+### Header
 
 | Name                      | Value |
 | ------------------------- | ----- |
@@ -75,21 +81,17 @@ sequenceDiagram
     Note right of Client: SourceAutoRecord
     participant Clients
 
-    Client->>Server: Connect (TCP)
-
-    Server->>Client: Accept
-
     Client->>Server: connection_packet
 
     Server->>Client: confirm_connection_packet
-    Server->>Clients: Broadcast connect_packet
+    Server->>Clients: connect_packet (broadcast)
 ```
 
 #### connection_packet
 
 | Field             | Type                    | Description |
 | ----------------- | ----------------------- | ----------- |
-| [header](#header) | u32                     |             |
+| [header](#header) | u32                     | `CONNECT`   |
 | port              | u32                     |             |
 | name              | CString                 |             |
 | data              | [DataGhost](#dataghost) |             |
@@ -133,7 +135,7 @@ sequenceDiagram
 
     Client->>Server: disconnect_packet
 
-    Server->>Clients: Broadcast disconnect_packet
+    Server->>Clients: disconnect_packet (broadcast)
 ```
 
 #### disconnect_packet
@@ -169,6 +171,31 @@ sequenceDiagram
 | ----------------- | ---- | ----------- |
 | [header](#header) | u32  | `PING`      |
 
+### Map Change
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr:53000
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Client->>Server: map_change_packet
+
+    Server->>Clients: map_change_packet
+```
+
+#### map_change_packet
+
+| Field             | Type    | Description  |
+| ----------------- | ------- | ------------ |
+| [header](#header) | u32     | `MAP_CHANGE` |
+| id                | u32     |              |
+| map_name          | CString |              |
+| ticks             | u32     |              |
+| tick_total        | u32     |              |
+
 ## Structs
 
 ### GhostEntity
@@ -201,12 +228,18 @@ sequenceDiagram
 
 ### DataGhost
 
-| Field       | Type              | Description |
-| ----------- | ----------------- | ----------- |
-| position    | [Vector](#vector) |             |
-| view_angle  | [Vector](#vector) |             |
-| view_offset | u32               |             |
-| grounded    | bool              |             |
+| Field      | Type              | Description                |
+| ---------- | ----------------- | -------------------------- |
+| position   | [Vector](#vector) |                            |
+| view_angle | [Vector](#vector) |                            |
+| data       | u8                | Encoded fields, see below. |
+
+##### Data
+
+| Field       | Type | Description                |
+| ----------- | ---- | -------------------------- |
+| view_offset | f32  | `data & 0x7F` (bit 1 to 7) |
+| grounded    | bool | `data & 0x80` (bit 8)      |
 
 ## License
 
