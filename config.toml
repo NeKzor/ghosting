@@ -5,7 +5,7 @@ port = 53000
 [client]
 name = "NeKz"
 model_name = "models/props/food_can/food_can_open.mdl"
-current_map = "sp_a4_intro"
+current_map = "sp_a1_intro1"
 tcp_only = false
 color = { r = 0, g = 0, b = 0 }
 spectator = false

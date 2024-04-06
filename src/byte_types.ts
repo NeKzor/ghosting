@@ -1,7 +1,7 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { type Options, SizedType, u32, UnsizedType } from '@denosaurs/byte-type';
+import { InnerType, type Options, SizedType, Struct as S, u32, UnsizedType } from '@denosaurs/byte-type';
 
 /**
  * Variable Length Array (VLA).
@@ -82,3 +82,21 @@ export class PhantomData<T> extends SizedType<T> {
   writePacked(_value: T, _dt: DataView, _options?: Options | undefined): void {
   }
 }
+
+export const struct = <
+  T extends Record<string, UnsizedType<unknown>>,
+  V extends { [K in keyof T]: InnerType<T[K]> } = {
+    [K in keyof T]: InnerType<T[K]>;
+  },
+>(layout: T, size = 1024) => {
+  return {
+    pack: (value: V) => {
+      const buffer = new ArrayBuffer(size);
+      new S(layout).write(value, new DataView(buffer));
+      return new Uint8Array(buffer);
+    },
+    unpack: (data: Uint8Array) => {
+      return new S(layout).read(new DataView(data.buffer));
+    },
+  };
+};

@@ -21,6 +21,8 @@
 
 ## Status
 
+### TODO
+
 - [ ] Ping
 - [x] Connect
 - [ ] Disconnect
@@ -34,6 +36,12 @@
 - [ ] Model Change
 - [ ] Color Change
 
+### Notes
+
+- ID is not a unique identifier
+- Header value gets ignored when starting a connection
+- `STOP_SERVER` is also implemented client-side
+
 ## Protocol
 
 ### Connect
@@ -44,6 +52,7 @@ sequenceDiagram
     Note left of Server: ghost.portal2.sr:53000
     participant Client
     Note right of Client: SourceAutoRecord
+    participant Clients
 
     Client->>Server: Connect (TCP)
 
@@ -52,89 +61,107 @@ sequenceDiagram
     Client->>Server: connection_packet
 
     Server->>Client: confirm_connection_packet
+    Server->>Clients: Broadcast connect_packet
 ```
 
 ## Packets
 
 ### connection_packet
 
-|                   |                         |
-| ----------------- | ----------------------- |
-| [header](#header) | u32                     |
-| port              | u32                     |
-| name              | CString                 |
-| data              | [DataGhost](#dataghost) |
-| model_name        | CString                 |
-| level_name        | CString                 |
-| tcp_only          | bool                    |
-| color             | [Color](#color)         |
-| spectator         | bool                    |
+Start of TCP connection.
+
+| Field             | Type                    | Description |
+| ----------------- | ----------------------- | ----------- |
+| [header](#header) | u32                     |             |
+| port              | u32                     |             |
+| name              | CString                 |             |
+| data              | [DataGhost](#dataghost) |             |
+| model_name        | CString                 |             |
+| level_name        | CString                 |             |
+| tcp_only          | bool                    |             |
+| color             | [Color](#color)         |             |
+| spectator         | bool                    |             |
 
 ### confirm_connection_packet
 
-|           |                                |
-| --------- | ------------------------------ |
-| nb_ghosts | u32                            |
-| ghosts    | [GhostEntity[]](#ghost-entity) |
+| Field     | Type                           | Description |
+| --------- | ------------------------------ | ----------- |
+| id        | u32                            |             |
+| nb_ghosts | u32                            |             |
+| ghosts    | [GhostEntity[]](#ghost-entity) |             |
+
+### connect_packet
+
+| Field             | Type                    | Description |
+| ----------------- | ----------------------- | ----------- |
+| [header](#header) | u32                     | `CONNECT`   |
+| id                | u32                     |             |
+| name              | CString                 |             |
+| data              | [DataGhost](#dataghost) |             |
+| model_name        | CString                 |             |
+| level_name        | CString                 |             |
+| tcp_only          | bool                    |             |
+| color             | [Color](#color)         |             |
+| spectator         | bool                    |             |
 
 ## Enums
 
 ### HEADER
 
-|                 |    |
-| --------------- | -- |
-| NONE            | 0  |
-| PING            | 1  |
-| CONNECT         | 2  |
-| DISCONNECT      | 3  |
-| STOP_SERVER     | 4  |
-| MAP_CHANGE      | 5  |
-| HEART_BEAT      | 6  |
-| MESSAGE         | 7  |
-| COUNTDOWN       | 8  |
-| UPDATE          | 9  |
-| SPEEDRUN_FINISH | 10 |
-| MODEL_CHANGE    | 11 |
-| COLOR_CHANGE    | 12 |
+| Name            | Value |
+| --------------- | ----- |
+| NONE            | 0     |
+| PING            | 1     |
+| CONNECT         | 2     |
+| DISCONNECT      | 3     |
+| STOP_SERVER     | 4     |
+| MAP_CHANGE      | 5     |
+| HEART_BEAT      | 6     |
+| MESSAGE         | 7     |
+| COUNTDOWN       | 8     |
+| UPDATE          | 9     |
+| SPEEDRUN_FINISH | 10    |
+| MODEL_CHANGE    | 11    |
+| COLOR_CHANGE    | 12    |
 
 ## Structs
 
 ### GhostEntity
 
-|             |                         |
-| ----------- | ----------------------- |
-| id          | u32                     |
-| name        | CString                 |
-| data        | [DataGhost](#dataghost) |
-| model_name  | CString                 |
-| current_map | CString                 |
-| color       | [Color](#color)         |
-| spectator   | bool                    |
+| Field       | Type                    | Description |
+| ----------- | ----------------------- | ----------- |
+| id          | u32                     |             |
+| name        | CString                 |             |
+| data        | [DataGhost](#dataghost) |             |
+| model_name  | CString                 |             |
+| current_map | CString                 |             |
+| color       | [Color](#color)         |             |
+| spectator   | bool                    |             |
 
 ### Color
 
-|   |     |
-| - | --- |
-| r | u32 |
-| g | u32 |
-| b | u32 |
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| r     | u32  |             |
+| g     | u32  |             |
+| b     | u32  |             |
 
 ### Vector
 
-|   |     |
-| - | --- |
-| x | f32 |
-| y | f32 |
-| z | f32 |
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| x     | f32  |             |
+| y     | f32  |             |
+| z     | f32  |             |
 
 ### DataGhost
 
-|             |                   |
-| ----------- | ----------------- |
-| position    | [Vector](#vector) |
-| view_angle  | [Vector](#vector) |
-| view_offset | u32               |
-| grounded    | bool              |
+| Field       | Type              | Description |
+| ----------- | ----------------- | ----------- |
+| position    | [Vector](#vector) |             |
+| view_angle  | [Vector](#vector) |             |
+| view_offset | u32               |             |
+| grounded    | bool              |             |
 
 ## License
 

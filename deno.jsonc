@@ -1,9 +1,9 @@
 {
   "tasks": {
     // Start server.
-    "server": "deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000 --watch src/server.ts",
+    "server": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000 --watch src/server.ts",
     // Simulate a client connection.
-    "client": "deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000,127.0.0.1:53001 src/client.ts",
+    "client": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000,127.0.0.1:53001 src/client.ts",
     // Run format check, linter and type check.
     "check": "deno fmt --check && deno lint && deno task check:types",
     // Run type check only.
@@ -11,6 +11,7 @@
   },
   "imports": {
     "@denosaurs/byte-type": "jsr:@denosaurs/byte-type@^0.4.0",
+    "@std/net": "jsr:@std/net@^0.221.0",
     "@std/toml": "jsr:@std/toml@^0.221.0"
   },
   "fmt": {

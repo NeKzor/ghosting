@@ -1,7 +1,7 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { bool, cstring, InnerType, Struct as S, u32, UnsizedType } from '@denosaurs/byte-type';
+import { bool, cstring, Struct, u32 } from '@denosaurs/byte-type';
 import { PhantomData, VariableArray } from './byte_types.ts';
 
 export enum Header {
@@ -18,6 +18,8 @@ export enum Header {
   SPEEDRUN_FINISH = 10,
   MODEL_CHANGE = 11,
   COLOR_CHANGE = 12,
+
+  LAST = Header.COLOR_CHANGE,
 }
 
 export class IVector {
@@ -40,20 +42,45 @@ export class IColor {
 export class IClient {
   constructor(
     public id: number,
-    public ip: number,
+    public ip: string,
     public port: number,
     public name: string,
     public data: IDataGhost,
-    public modelName: string,
-    public currentMap: string,
-    public tcpSocket: unknown,
-    public tcpOnly: boolean,
+    public model_name: string,
+    public current_map: string,
+    public tcp_socket: Deno.Conn | undefined,
+    public tcp_only: boolean,
     public color: IColor,
-    public heartbeatToken: number,
-    public returnedHeartbeat: boolean,
-    public missedLastHeartbeat: boolean,
+    public heartbeat_token: number,
+    public returned_heartbeat: boolean,
+    public missed_last_heartbeat: boolean,
     public spectator: boolean,
   ) {}
+}
+
+export class IGhostEntity {
+  constructor(
+    public id: number,
+    public name: string,
+    public data: IDataGhost,
+    public model_name: string,
+    public current_map: string,
+    public color: IColor,
+    public spectator: boolean,
+  ) {
+  }
+
+  static from(client: IClient) {
+    return new IGhostEntity(
+      client.id,
+      client.name,
+      client.data,
+      client.model_name,
+      client.current_map,
+      client.color,
+      client.spectator,
+    );
+  }
 }
 
 export const Vector = {
@@ -69,8 +96,8 @@ export const Color = {
 };
 
 export const DataGhost = {
-  position: new S(Vector),
-  view_angle: new S(Vector),
+  position: new Struct(Vector),
+  view_angle: new Struct(Vector),
   view_offset: u32,
   grounded: bool,
 };
@@ -79,43 +106,37 @@ export const ConnectionPacket = {
   header: u32,
   port: u32,
   name: cstring,
-  data: new S(DataGhost),
+  data: new Struct(DataGhost),
   model_name: cstring,
   current_map: cstring,
   tcp_only: bool,
-  color: new S(Color),
+  color: new Struct(Color),
   spectator: bool,
 };
 
 export const GhostEntity = {
   id: u32,
   name: cstring,
-  data: new S(DataGhost),
+  data: new Struct(DataGhost),
   model_name: cstring,
   current_map: cstring,
-  color: new S(Color),
+  color: new Struct(Color),
   spectator: bool,
 };
 
 export const ConfirmConnectionPacket = {
+  id: u32,
   nb_ghosts: new PhantomData(Number),
-  ghosts: new VariableArray(new S(GhostEntity)),
+  ghosts: new VariableArray(new Struct(GhostEntity)),
 };
 
-export const Struct = <
-  T extends Record<string, UnsizedType<unknown>>,
-  V extends { [K in keyof T]: InnerType<T[K]> } = {
-    [K in keyof T]: InnerType<T[K]>;
-  },
->(layout: T, size = 1024) => {
-  return {
-    pack: (value: V) => {
-      const buffer = new ArrayBuffer(size);
-      new S(layout).write(value, new DataView(buffer));
-      return buffer;
-    },
-    unpack: (data: Uint8Array) => {
-      return new S(layout).read(new DataView(data.buffer));
-    },
-  };
+export const ConnectPacket = {
+  header: u32,
+  id: u32,
+  name: cstring,
+  data: new Struct(DataGhost),
+  model_name: cstring,
+  current_map: cstring,
+  color: new Struct(Color),
+  spectator: bool,
 };
