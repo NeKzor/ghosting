@@ -7,9 +7,13 @@
 - [Status](#status)
 - [Protocol](#protocol)
   - [Connect](#connect)
-- [Packets](#packets)
-  - [connection_packet](#connection_packet)
-  - [confirm_connection_packet](#confirm_connection_packet)
+    - [connection_packet](#connection_packet)
+    - [confirm_connection_packet](#confirm_connection_packet)
+  - [Disconnect](#connect)
+    - [disconnect_packet](#disconnect_packet)
+  - [Ping](#ping)
+    - [ping_packet](#ping_packet)
+    - [ping_echo_packet](#ping_echo_packet)
 - [Enums](#enums)
   - [HEADER](#header)
 - [Structs](#structs)
@@ -23,9 +27,9 @@
 
 ### TODO
 
-- [ ] Ping
+- [x] Ping
 - [x] Connect
-- [ ] Disconnect
+- [x] Disconnect
 - [ ] Stop Server
 - [ ] Map Change
 - [ ] Heart Beat
@@ -41,8 +45,25 @@
 - ID is not a unique identifier
 - Header value gets ignored when starting a connection
 - `STOP_SERVER` is also implemented client-side
+- Disconnect is checked by IP
 
 ## Protocol
+
+| Name                      | Value |
+| ------------------------- | ----- |
+| NONE                      | 0     |
+| [PING](#ping)             | 1     |
+| [CONNECT](#connect)       | 2     |
+| [DISCONNECT](#disconnect) | 3     |
+| STOP_SERVER               | 4     |
+| MAP_CHANGE                | 5     |
+| HEART_BEAT                | 6     |
+| MESSAGE                   | 7     |
+| COUNTDOWN                 | 8     |
+| UPDATE                    | 9     |
+| SPEEDRUN_FINISH           | 10    |
+| MODEL_CHANGE              | 11    |
+| COLOR_CHANGE              | 12    |
 
 ### Connect
 
@@ -64,11 +85,7 @@ sequenceDiagram
     Server->>Clients: Broadcast connect_packet
 ```
 
-## Packets
-
-### connection_packet
-
-Start of TCP connection.
+#### connection_packet
 
 | Field             | Type                    | Description |
 | ----------------- | ----------------------- | ----------- |
@@ -82,7 +99,7 @@ Start of TCP connection.
 | color             | [Color](#color)         |             |
 | spectator         | bool                    |             |
 
-### confirm_connection_packet
+#### confirm_connection_packet
 
 | Field     | Type                           | Description |
 | --------- | ------------------------------ | ----------- |
@@ -90,7 +107,7 @@ Start of TCP connection.
 | nb_ghosts | u32                            |             |
 | ghosts    | [GhostEntity[]](#ghost-entity) |             |
 
-### connect_packet
+#### connect_packet
 
 | Field             | Type                    | Description |
 | ----------------- | ----------------------- | ----------- |
@@ -104,25 +121,53 @@ Start of TCP connection.
 | color             | [Color](#color)         |             |
 | spectator         | bool                    |             |
 
-## Enums
+### Disconnect
 
-### HEADER
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr:53000
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
 
-| Name            | Value |
-| --------------- | ----- |
-| NONE            | 0     |
-| PING            | 1     |
-| CONNECT         | 2     |
-| DISCONNECT      | 3     |
-| STOP_SERVER     | 4     |
-| MAP_CHANGE      | 5     |
-| HEART_BEAT      | 6     |
-| MESSAGE         | 7     |
-| COUNTDOWN       | 8     |
-| UPDATE          | 9     |
-| SPEEDRUN_FINISH | 10    |
-| MODEL_CHANGE    | 11    |
-| COLOR_CHANGE    | 12    |
+    Client->>Server: disconnect_packet
+
+    Server->>Clients: Broadcast disconnect_packet
+```
+
+#### disconnect_packet
+
+| Field             | Type | Description  |
+| ----------------- | ---- | ------------ |
+| [header](#header) | u32  | `DISCONNECT` |
+| id                | u32  |              |
+
+### Ping
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr:53000
+    participant Client
+
+    Client->>Server: ping_packet
+
+    Server->>Client: ping_echo_packet
+```
+
+#### ping_packet
+
+| Field             | Type | Description |
+| ----------------- | ---- | ----------- |
+| [header](#header) | u32  | `PING`      |
+| id                | u32  |             |
+
+#### ping_echo_packet
+
+| Field             | Type | Description |
+| ----------------- | ---- | ----------- |
+| [header](#header) | u32  | `PING`      |
 
 ## Structs
 

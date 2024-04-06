@@ -3,9 +3,11 @@
 
 // deno-lint-ignore-file no-unused-vars
 
+import { tty } from 'cliffy/ansi/tty.ts';
 import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
-import { PingPacket } from './protocol.ts';
+import { IGhostEntity } from './protocol.ts';
+import { DisconnectPacket, PingPacket } from './protocol.ts';
 import { ConfirmConnectionPacket, ConnectionPacket, ConnectPacket, Header } from './protocol.ts';
 import { getAvailablePort } from '@std/net';
 import { Select } from 'cliffy/prompt/select.ts';
@@ -28,13 +30,25 @@ const {
 const state = {
   id: -1,
   pingClock: new Date(),
+  ghostPool: [] as IGhostEntity[],
 };
 
-const tcp = await Deno.connect({
-  hostname,
-  port,
-  transport: 'tcp',
-});
+const tcp = await (async () => {
+  try {
+    return await Deno.connect({
+      hostname,
+      port,
+      transport: 'tcp',
+    });
+  } catch (err) {
+    if (err instanceof Deno.errors.ConnectionRefused) {
+      console.log(`Unable to connect to ${hostname}:${port}`);
+    } else {
+      console.error(err);
+    }
+    Deno.exit(1);
+  }
+})();
 
 // const udp = Deno.listenDatagram({
 //   port: getAvailablePort({ preferredPort: port + 1 }),
@@ -84,7 +98,11 @@ const connect = async () => {
   console.log(packet);
   state.id = packet.id;
 
-  listenTcp().catch(console.error);
+  listenTcp().catch((err) => {
+    console.error(err);
+    disconnect();
+    Deno.exit(1);
+  });
 
   //await udp.send(new Uint8Array(packet), address);
 };
@@ -102,6 +120,9 @@ const listenTcp = async () => {
     const handler = PacketHandler[header as Header];
     await handler(data, tcp);
   }
+
+  disconnect();
+  Deno.exit(0);
 };
 
 const sendPing = async () => {
@@ -130,10 +151,23 @@ const PacketHandler = {
     );
   },
   [Header.DISCONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
-    const { name, spectator } = struct(ConnectPacket).unpack(data);
-    console.log(
-      `${name}${spectator ? ' (spectator)' : ''} has disconnected!`,
-    );
+    const { id } = struct(DisconnectPacket).unpack(data);
+
+    let idx = 0;
+    let toErase = -1;
+
+    for (const ghost of state.ghostPool) {
+      if (ghost.id === id) {
+        console.log(
+          `${name}${spectator ? ' (spectator)' : ''} has disconnected!`,
+        );
+        toErase = idx;
+        break;
+      }
+      idx += 1;
+    }
+
+    toErase !== -1 && state.ghostPool.splice(toErase, 1);
   },
   [Header.STOP_SERVER]: async (data: Uint8Array, conn: Deno.Conn) => {
     /* no-op */
@@ -179,6 +213,8 @@ const disconnect = () => {
     return;
   }
 
+  tty.cursorLeft.eraseDown.cursorShow();
+
   try {
     tcp.close();
     // deno-lint-ignore no-empty
@@ -190,6 +226,7 @@ const disconnect = () => {
   } catch {
   }
 
+  console.log('Disconnected');
   disconnected = true;
 };
 
@@ -204,16 +241,27 @@ try {
       options: [
         { name: 'exit', value: 'exit' },
         { name: 'ping', value: 'ping' },
+        { name: 'disconnect', value: 'disconnect' },
       ],
     });
 
     switch (command) {
       case 'exit': {
+        disconnect();
         Deno.exit(0);
         break;
       }
       case 'ping': {
         await sendPing();
+        break;
+      }
+      case 'disconnect': {
+        await tcp.write(
+          struct(DisconnectPacket).pack({
+            header: Header.DISCONNECT,
+            id: state.id,
+          }),
+        );
         break;
       }
       default:

@@ -10,6 +10,7 @@ import {
   ConfirmConnectionPacket,
   ConnectionPacket,
   ConnectPacket,
+  DisconnectPacket,
   Header,
   IClient,
   IGhostEntity,
@@ -71,7 +72,7 @@ const handleConnection = async (conn: Deno.Conn) => {
 
     conn.close();
   } catch (err) {
-    if (!(err instanceof Deno.errors.BrokenPipe)) {
+    if (!(err instanceof Deno.errors.BrokenPipe) && !(err instanceof Deno.errors.BadResource)) {
       log.error(err);
     }
   }
@@ -149,7 +150,7 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
     }),
   );
 
-  //log.info(`New client:`, client);
+  log.info(`New player ${client.name} (${client.spectator ? 'spectator' : 'player'}) @ ${client.ip}:${client.port}`);
 
   state.clients.push(client);
 
@@ -158,6 +159,35 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
 
 const getClientById = (id: number) => {
   return state.clients.find((client) => client.id === id);
+};
+
+const disconnectPlayer = async (clientPlayer: IClient, reason: string) => {
+  const packet = struct(DisconnectPacket).pack({
+    header: Header.DISCONNECT,
+    id: clientPlayer.id,
+  });
+
+  const clients: IClient[] = [];
+
+  for (const client of state.clients) {
+    try {
+      if (client.ip !== clientPlayer.ip) {
+        if (client.tcp_socket) {
+          await client.tcp_socket.write(packet);
+          clients.push(client);
+        }
+      } else {
+        log.info(`Player ${clientPlayer.name} has disconnected! Reason: ${reason}`);
+        client.tcp_socket?.close();
+      }
+    } catch (err) {
+      if (!(err instanceof Deno.errors.BadResource)) {
+        log.error(err);
+      }
+    }
+  }
+
+  state.clients = clients;
 };
 
 const PacketHandler = {
@@ -177,9 +207,10 @@ const PacketHandler = {
     /* no-op */
   },
   [Header.DISCONNECT]: async (data: Uint8Array, conn: Deno.Conn) => {
-    log.info(`Disconnect`);
-    // TODO
-    //const packet = Struct(DisconnectPacket).unpack(data);
+    const { id } = struct(DisconnectPacket).unpack(data);
+
+    const client = getClientById(id);
+    client && await disconnectPlayer(client, 'requested');
   },
   [Header.STOP_SERVER]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO

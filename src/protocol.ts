@@ -149,3 +149,8 @@ export const PingPacket = {
 export const PingEchoPacket = {
   header: u32,
 };
+
+export const DisconnectPacket = {
+  header: u32,
+  id: u32,
+};
