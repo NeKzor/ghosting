@@ -92,41 +92,32 @@ export const struct = <
     [K in keyof T]: InnerType<T[K]>;
   },
 >(layout: T, size = 1024) => {
+  const input = new Struct(layout);
   return {
     pack: (value: V) => {
       const buffer = new ArrayBuffer(size);
-      new Struct(layout).write(value, new DataView(buffer));
+      input.write(value, new DataView(buffer));
       return new Uint8Array(buffer);
     },
-    packSized: (value: V) => {
+    packWithSize: (value: V) => {
       const buffer = new ArrayBuffer(size);
       const options = { byteOffset: 0 };
-      new Struct(layout).write(value, new DataView(buffer), options);
+      input.write(value, new DataView(buffer), options);
       return [new Uint8Array(buffer), options.byteOffset];
     },
     packResized: (value: V) => {
       const buffer = new ArrayBuffer(size);
       const options = { byteOffset: 0 };
-      new Struct(layout).write(value, new DataView(buffer), options);
+      input.write(value, new DataView(buffer), options);
       return new Uint8Array(buffer).slice(0, options.byteOffset);
     },
     unpack: (data: Uint8Array) => {
-      return new Struct(layout).read(new DataView(data.buffer));
+      return input.read(new DataView(data.buffer));
     },
-    unpackSized: (data: Uint8Array) => {
+    unpackWithSized: (data: Uint8Array) => {
       const options = { byteOffset: 0 };
-      const value = new Struct(layout).read(new DataView(data.buffer));
+      const value = input.read(new DataView(data.buffer));
       return [value, options.byteOffset];
     },
   };
 };
-
-/**
- * Operator typeof for structs.
- */
-export type TypeOf<
-  T extends Record<string, UnsizedType<unknown>>,
-  V extends { [K in keyof T]: InnerType<T[K]> } = {
-    [K in keyof T]: InnerType<T[K]>;
-  },
-> = V;

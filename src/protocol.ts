@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import { bool, cstring, Struct, u32, u8 } from '@denosaurs/byte-type';
-import { PhantomData, VariableArray } from './byte_types.ts';
+import { PhantomData, struct, VariableArray } from './byte_types.ts';
 
 export enum Header {
   NONE = 0,
@@ -105,102 +105,102 @@ export class IGhostEntity {
   }
 }
 
-export const Vector = {
+export const Vector = new Struct({
   x: u32,
   y: u32,
   z: u32,
-};
+});
 
-export const Color = {
+export const Color = new Struct({
   r: u32,
   g: u32,
   b: u32,
-};
+});
 
-export const DataGhost = {
-  position: new Struct(Vector),
-  view_angle: new Struct(Vector),
+export const DataGhost = new Struct({
+  position: Vector,
+  view_angle: Vector,
   data: u8,
-};
+});
 
-export const ConnectionPacket = {
+export const GhostEntity = new Struct({
+  id: u32,
+  name: cstring,
+  data: DataGhost,
+  model_name: cstring,
+  current_map: cstring,
+  color: Color,
+  spectator: bool,
+});
+
+export const ConnectionPacket = struct({
   header: u32,
   port: u32,
   name: cstring,
-  data: new Struct(DataGhost),
+  data: DataGhost,
   model_name: cstring,
   current_map: cstring,
   tcp_only: bool,
-  color: new Struct(Color),
+  color: Color,
   spectator: bool,
-};
+});
 
-export const GhostEntity = {
-  id: u32,
-  name: cstring,
-  data: new Struct(DataGhost),
-  model_name: cstring,
-  current_map: cstring,
-  color: new Struct(Color),
-  spectator: bool,
-};
-
-export const ConfirmConnectionPacket = {
+export const ConfirmConnectionPacket = struct({
   id: u32,
   nb_ghosts: new PhantomData(Number),
-  ghosts: new VariableArray(new Struct(GhostEntity)),
-};
+  ghosts: new VariableArray(GhostEntity),
+});
 
-export const ConnectPacket = {
+export const ConnectPacket = struct({
   header: u32,
   id: u32,
   name: cstring,
-  data: new Struct(DataGhost),
+  data: DataGhost,
   model_name: cstring,
   current_map: cstring,
-  color: new Struct(Color),
+  color: Color,
   spectator: bool,
-};
+});
 
-export const PingPacket = {
+export const PingPacket = struct({
   header: u32,
   id: u32,
-};
+});
 
-export const PingEchoPacket = {
+export const PingEchoPacket = struct({
   header: u32,
-};
+});
 
-export const DisconnectPacket = {
+export const DisconnectPacket = struct({
   header: u32,
   id: u32,
-};
+});
 
-export const MapChangePacket = {
+export const MapChangePacket = struct({
   header: u32,
   id: u32,
   map_name: cstring,
   ticks: u32,
   ticks_total: u32,
-};
+});
 
-export const MessagePacket = {
+export const MessagePacket = struct({
   header: u32,
   id: u32,
   message: cstring,
-};
+});
 
-export const CountdownPacket = {
+export const CountdownPacket = struct({
   header: u32,
   id: u32,
   step: u8,
   duration: u32,
   pre_commands: cstring,
   post_commands: cstring,
-};
+});
 
-export const ConfirmCountdownPacket = {
+export const ConfirmCountdownPacket = struct({
   header: u32,
   id: u32,
   step: u8,
-};
+});

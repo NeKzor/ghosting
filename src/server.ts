@@ -7,7 +7,6 @@
 /// <reference lib="deno.worker" />
 /// <reference lib="deno.unstable" />
 
-import { struct, TypeOf } from './byte_types.ts';
 import { getConfig } from './config.ts';
 import { ServerEvent } from './events.ts';
 import { ServerEventType } from './events.ts';
@@ -114,7 +113,7 @@ const broadcast = async (packet: Uint8Array) => {
 };
 
 const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
-  const packet = struct(ConnectionPacket).unpack(data);
+  const packet = ConnectionPacket.unpack(data);
 
   if (!(packet.spectator ? state.acceptingSpectators : state.acceptingPlayers)) {
     return false;
@@ -144,7 +143,7 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
   );
 
   await conn.write(
-    struct(ConfirmConnectionPacket).pack({
+    ConfirmConnectionPacket.pack({
       id: client.id,
       nb_ghosts: state.clients.length,
       ghosts: state.clients.map(IGhostEntity.from),
@@ -152,7 +151,7 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
   );
 
   await broadcast(
-    struct(ConnectPacket).pack({
+    ConnectPacket.pack({
       header: Header.CONNECT,
       id: client.id,
       name: client.name,
@@ -176,7 +175,7 @@ const getClientById = (id: number) => {
 };
 
 const disconnectPlayer = async (clientPlayer: IClient, reason: string) => {
-  const packet = struct(DisconnectPacket).pack({
+  const packet = DisconnectPacket.pack({
     header: Header.DISCONNECT,
     id: clientPlayer.id,
   });
@@ -204,8 +203,10 @@ const disconnectPlayer = async (clientPlayer: IClient, reason: string) => {
   state.clients = clients;
 };
 
-const handleMapChange = async ({ id, map_name, ticks, ticks_total }: TypeOf<typeof MapChangePacket>) => {
-  const packet = struct(MapChangePacket).pack({
+const handleMapChange = async (data: Uint8Array) => {
+  const { id, map_name, ticks, ticks_total } = MapChangePacket.unpack(data);
+
+  const packet = MapChangePacket.pack({
     header: Header.MAP_CHANGE,
     id,
     map_name,
@@ -234,10 +235,10 @@ const PacketHandler = {
     /* no-op */
   },
   [Header.PING]: async (data: Uint8Array, conn: Deno.Conn) => {
-    const { id } = struct(PingPacket).unpack(data);
+    const { id } = PingPacket.unpack(data);
 
     getClientById(id)?.tcp_socket?.write(
-      struct(PingEchoPacket).pack({
+      PingEchoPacket.pack({
         header: Header.PING,
       }),
     );
@@ -246,7 +247,7 @@ const PacketHandler = {
     /* no-op */
   },
   [Header.DISCONNECT]: async (data: Uint8Array, conn: Deno.Conn) => {
-    const { id } = struct(DisconnectPacket).unpack(data);
+    const { id } = DisconnectPacket.unpack(data);
 
     const client = getClientById(id);
     client && await disconnectPlayer(client, 'requested');
@@ -255,20 +256,20 @@ const PacketHandler = {
     /* very questionable */
   },
   [Header.MAP_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    await handleMapChange(struct(MapChangePacket).unpack(data));
+    await handleMapChange(data);
   },
   [Header.HEART_BEAT]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Heart_BeatPacket).unpack(data);
+    //const packet = Heart_BeatPacket.unpack(data);
   },
   [Header.MESSAGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    const { id, message } = struct(MessagePacket).unpack(data);
+    const { id, message } = MessagePacket.unpack(data);
     const client = getClientById(id);
     if (client) {
       log.info(`[message] ${client.name}: ${message}`);
 
       await broadcast(
-        struct(MessagePacket).pack({
+        MessagePacket.pack({
           header: Header.MESSAGE,
           id,
           message,
@@ -281,7 +282,7 @@ const PacketHandler = {
     const client = getClientById(id);
     if (client) {
       client.tcp_socket?.write(
-        struct(ConfirmCountdownPacket).pack({
+        ConfirmCountdownPacket.pack({
           header: Header.COUNTDOWN,
           id: 0,
           step: 1,
@@ -291,19 +292,19 @@ const PacketHandler = {
   },
   [Header.UPDATE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(UpdatePacket).unpack(data);
+    //const packet = UpdatePacket.unpack(data);
   },
   [Header.SPEEDRUN_FINISH]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Speedrun_FinishPacket).unpack(data);
+    //const packet = Speedrun_FinishPacket.unpack(data);
   },
   [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Model_ChangePacket).unpack(data);
+    //const packet = Model_ChangePacket.unpack(data);
   },
   [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Color_ChangePacket).unpack(data);
+    //const packet = Color_ChangePacket.unpack(data);
   },
 };
 
@@ -328,7 +329,7 @@ self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) =>
     case EventType.StartCountdown: {
       const { duration, preCommands, postCommands } = state.countdown;
       await broadcast(
-        struct(CountdownPacket).pack({
+        CountdownPacket.pack({
           header: Header.COUNTDOWN,
           id: 0,
           step: 0,

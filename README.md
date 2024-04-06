@@ -23,8 +23,6 @@
   - [Countdown](#countdown)
     - [countdown_packet](#countdown_packet)
     - [confirm_countdown_packet](#confirm_countdown_packet)
-- [Enums](#enums)
-  - [HEADER](#header)
 - [Structs](#structs)
   - [GhostEntity](#ghostentity)
   - [Color](#color)

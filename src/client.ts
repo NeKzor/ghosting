@@ -6,7 +6,6 @@
 import { tty } from 'cliffy/ansi/tty.ts';
 import { Input } from 'cliffy/prompt/input.ts';
 import { Select } from 'cliffy/prompt/select.ts';
-import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
 import {
   ConfirmConnectionPacket,
@@ -74,7 +73,7 @@ const _address: Deno.NetAddr = {
 
 const connect = async () => {
   await tcp.write(
-    struct(ConnectionPacket).pack({
+    ConnectionPacket.pack({
       header: Header.CONNECT,
       port,
       name,
@@ -104,7 +103,7 @@ const connect = async () => {
     return;
   }
 
-  const { id, ghosts } = struct(ConfirmConnectionPacket).unpack(data);
+  const { id, ghosts } = ConfirmConnectionPacket.unpack(data);
 
   state.id = id;
 
@@ -157,7 +156,7 @@ const sendPing = async () => {
   state.pingClock = new Date();
 
   await tcp.write(
-    struct(PingPacket).pack({
+    PingPacket.pack({
       header: Header.PING,
       id: state.id,
     }),
@@ -177,7 +176,7 @@ const PacketHandler = {
     console.log(`Ping: ${ping}ms`);
   },
   [Header.CONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
-    const { id, name, data: dataGhost, model_name, current_map, color, spectator } = struct(ConnectPacket).unpack(data);
+    const { id, name, data: dataGhost, model_name, current_map, color, spectator } = ConnectPacket.unpack(data);
 
     console.log(
       `${name}${spectator ? ' (spectator)' : ''} has connected in ${current_map.length ? current_map : 'the menu'}!`,
@@ -200,7 +199,7 @@ const PacketHandler = {
     );
   },
   [Header.DISCONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
-    const { id } = struct(DisconnectPacket).unpack(data);
+    const { id } = DisconnectPacket.unpack(data);
 
     let idx = 0;
     let toErase = -1;
@@ -222,7 +221,7 @@ const PacketHandler = {
     /* no-op */
   },
   [Header.MAP_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
-    const packet = struct(MapChangePacket).unpack(data);
+    const packet = MapChangePacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
       const { map_name, ticks } = packet;
@@ -237,10 +236,10 @@ const PacketHandler = {
   },
   [Header.HEART_BEAT]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Heart_BeatPacket).unpack(data);
+    //const packet = HeartBeatPacket.unpack(data);
   },
   [Header.MESSAGE]: (data: Uint8Array, conn: Deno.Conn) => {
-    const packet = struct(MessagePacket).unpack(data);
+    const packet = MessagePacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
       console.log(`${ghost.name}: ${packet.message}`);
@@ -249,12 +248,12 @@ const PacketHandler = {
   [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
     const step = data[8];
     if (step === 0) {
-      const { duration, pre_commands, post_commands } = struct(CountdownPacket).unpack(data);
+      const { duration, pre_commands, post_commands } = CountdownPacket.unpack(data);
 
       console.log(`Countdown setup: ${duration}, ${pre_commands}, ${post_commands}`);
 
       await conn.write(
-        struct(ConfirmCountdownPacket).pack({
+        ConfirmCountdownPacket.pack({
           header: Header.COUNTDOWN,
           id: state.id,
           step: 1,
@@ -266,19 +265,19 @@ const PacketHandler = {
   },
   [Header.UPDATE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(UpdatePacket).unpack(data);
+    //const packet = UpdatePacket.unpack(data);
   },
   [Header.SPEEDRUN_FINISH]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Speedrun_FinishPacket).unpack(data);
+    //const packet = SpeedrunFinishPacket.unpack(data);
   },
   [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Model_ChangePacket).unpack(data);
+    //const packet = ModelChangePacket.unpack(data);
   },
   [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
-    //const packet = Struct(Color_ChangePacket).unpack(data);
+    //const packet = ColorChangePacket.unpack(data);
   },
 };
 
@@ -324,7 +323,7 @@ try {
     },
     disconnect: async () => {
       await tcp.write(
-        struct(DisconnectPacket).pack({
+        DisconnectPacket.pack({
           header: Header.DISCONNECT,
           id: state.id,
         }),
@@ -332,7 +331,7 @@ try {
     },
     map_change: async () => {
       await tcp.write(
-        struct(MapChangePacket).pack({
+        MapChangePacket.pack({
           header: Header.MAP_CHANGE,
           id: state.id,
           map_name: 'sp_a1_intro2',
@@ -344,7 +343,7 @@ try {
     message: async () => {
       const message: string = await Input.prompt('Enter a message:');
       await tcp.write(
-        struct(MessagePacket).pack({
+        MessagePacket.pack({
           header: Header.MESSAGE,
           id: state.id,
           message,
@@ -353,7 +352,7 @@ try {
     },
     countdown: async () => {
       await tcp.write(
-        struct(CountdownPacket).pack({
+        CountdownPacket.pack({
           header: Header.MESSAGE,
           id: state.id,
           step: 0,
@@ -374,7 +373,7 @@ try {
   while (true) {
     const command = await Select.prompt(commandPrompt) as unknown as keyof typeof commands;
     const handler = commands[command];
-    handler();
+    await handler();
   }
 } catch (err) {
   if (!(err instanceof Deno.errors.Interrupted)) {
