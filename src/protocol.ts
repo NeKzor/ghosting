@@ -140,3 +140,12 @@ export const ConnectPacket = {
   color: new Struct(Color),
   spectator: bool,
 };
+
+export const PingPacket = {
+  header: u32,
+  id: u32,
+};
+
+export const PingEchoPacket = {
+  header: u32,
+};

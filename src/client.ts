@@ -5,8 +5,10 @@
 
 import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
+import { PingPacket } from './protocol.ts';
 import { ConfirmConnectionPacket, ConnectionPacket, ConnectPacket, Header } from './protocol.ts';
 import { getAvailablePort } from '@std/net';
+import { Select } from 'cliffy/prompt/select.ts';
 
 const {
   server: {
@@ -25,6 +27,7 @@ const {
 
 const state = {
   id: -1,
+  pingClock: new Date(),
 };
 
 const tcp = await Deno.connect({
@@ -81,7 +84,7 @@ const connect = async () => {
   console.log(packet);
   state.id = packet.id;
 
-  await listenTcp();
+  listenTcp().catch(console.error);
 
   //await udp.send(new Uint8Array(packet), address);
 };
@@ -101,13 +104,24 @@ const listenTcp = async () => {
   }
 };
 
+const sendPing = async () => {
+  state.pingClock = new Date();
+
+  await tcp.write(
+    struct(PingPacket).pack({
+      header: Header.PING,
+      id: state.id,
+    }),
+  );
+};
+
 const PacketHandler = {
   [Header.NONE]: async (_data: Uint8Array, _conn: Deno.Conn) => {
     /* no-op */
   },
   [Header.PING]: (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO: Implement ping clock
-    console.log(`Ping: ${0}ms`);
+    const ping = new Date().getTime() - state.pingClock.getTime();
+    console.log(`Ping: ${ping}ms`);
   },
   [Header.CONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
     const { name, spectator, current_map } = struct(ConnectPacket).unpack(data);
@@ -183,6 +197,29 @@ Deno.addSignalListener('SIGINT', disconnect);
 
 try {
   await connect();
+
+  while (true) {
+    const command: string = await Select.prompt({
+      message: 'Command:',
+      options: [
+        { name: 'exit', value: 'exit' },
+        { name: 'ping', value: 'ping' },
+      ],
+    });
+
+    switch (command) {
+      case 'exit': {
+        Deno.exit(0);
+        break;
+      }
+      case 'ping': {
+        await sendPing();
+        break;
+      }
+      default:
+        break;
+    }
+  }
 } catch (err) {
   if (!(err instanceof Deno.errors.Interrupted)) {
     console.error(err);

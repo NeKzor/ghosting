@@ -5,7 +5,16 @@
 
 import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
-import { ConfirmConnectionPacket, ConnectionPacket, ConnectPacket, Header, IClient, IGhostEntity } from './protocol.ts';
+import {
+  ConfirmConnectionPacket,
+  ConnectionPacket,
+  ConnectPacket,
+  Header,
+  IClient,
+  IGhostEntity,
+  PingEchoPacket,
+  PingPacket,
+} from './protocol.ts';
 import { State } from './state.ts';
 
 const { server: { hostname, port } } = await getConfig();
@@ -46,7 +55,7 @@ const handleConnection = async (conn: Deno.Conn) => {
     const data = new Uint8Array(1024);
     while (await conn.read(data)) {
       const header = data[0]!;
-      console.log(conn, header);
+      console.log(conn.remoteAddr, header);
 
       if (header > Header.LAST) {
         console.log(`Ignoring invalid header value ${header}`);
@@ -144,13 +153,22 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
   return true;
 };
 
+const getClientById = (id: number) => {
+  return state.clients.find((client) => client.id === id);
+};
+
 const PacketHandler = {
   [Header.NONE]: async (_data: Uint8Array, _conn: Deno.Conn) => {
     /* no-op */
   },
   [Header.PING]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO: Implement ping clock
-    console.log(`Ping: ${0}ms`);
+    const { id } = struct(PingPacket).unpack(data);
+
+    getClientById(id)?.tcp_socket?.write(
+      struct(PingEchoPacket).pack({
+        header: Header.PING,
+      }),
+    );
   },
   [Header.CONNECT]: async (data: Uint8Array, conn: Deno.Conn) => {
     /* no-op */
