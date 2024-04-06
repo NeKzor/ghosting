@@ -94,7 +94,7 @@ sequenceDiagram
 
 | Field             | Type                    | Description |
 | ----------------- | ----------------------- | ----------- |
-| [header](#header) | u32                     | `CONNECT`   |
+| [header](#header) | u8                      | `CONNECT`   |
 | port              | u32                     |             |
 | name              | CString                 |             |
 | data              | [DataGhost](#dataghost) |             |
@@ -116,7 +116,7 @@ sequenceDiagram
 
 | Field             | Type                    | Description |
 | ----------------- | ----------------------- | ----------- |
-| [header](#header) | u32                     | `CONNECT`   |
+| [header](#header) | u8                      | `CONNECT`   |
 | id                | u32                     |             |
 | name              | CString                 |             |
 | data              | [DataGhost](#dataghost) |             |
@@ -145,7 +145,7 @@ sequenceDiagram
 
 | Field             | Type | Description  |
 | ----------------- | ---- | ------------ |
-| [header](#header) | u32  | `DISCONNECT` |
+| [header](#header) | u8   | `DISCONNECT` |
 | id                | u32  |              |
 
 ### Ping
@@ -166,14 +166,14 @@ sequenceDiagram
 
 | Field             | Type | Description |
 | ----------------- | ---- | ----------- |
-| [header](#header) | u32  | `PING`      |
+| [header](#header) | u8   | `PING`      |
 | id                | u32  |             |
 
 #### ping_echo_packet
 
 | Field             | Type | Description |
 | ----------------- | ---- | ----------- |
-| [header](#header) | u32  | `PING`      |
+| [header](#header) | u8   | `PING`      |
 
 ### Map Change
 
@@ -194,7 +194,7 @@ sequenceDiagram
 
 | Field             | Type    | Description  |
 | ----------------- | ------- | ------------ |
-| [header](#header) | u32     | `MAP_CHANGE` |
+| [header](#header) | u8      | `MAP_CHANGE` |
 | id                | u32     |              |
 | map_name          | CString |              |
 | ticks             | u32     |              |
@@ -219,7 +219,7 @@ sequenceDiagram
 
 | Field             | Type    | Description |
 | ----------------- | ------- | ----------- |
-| [header](#header) | u32     | `MESSAGE`   |
+| [header](#header) | u8      | `MESSAGE`   |
 | id                | u32     |             |
 | message           | CString |             |
 
@@ -242,7 +242,7 @@ sequenceDiagram
 
 | Field             | Type    | Description |
 | ----------------- | ------- | ----------- |
-| [header](#header) | u32     | `COUNTDOWN` |
+| [header](#header) | u8      | `COUNTDOWN` |
 | id                | u32     | 0           |
 | step              | u32     | 0           |
 | duration          | u32     |             |
@@ -253,7 +253,7 @@ sequenceDiagram
 
 | Field             | Type | Description    |
 | ----------------- | ---- | -------------- |
-| [header](#header) | u32  | `COUNTDOWN`    |
+| [header](#header) | u8   | `COUNTDOWN`    |
 | id                | u32  | Server sends 0 |
 | step              | u32  | 1              |
 

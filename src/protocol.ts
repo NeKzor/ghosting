@@ -134,7 +134,7 @@ export const GhostEntity = new Struct({
 });
 
 export const ConnectionPacket = struct({
-  header: u32,
+  header: u8,
   port: u32,
   name: cstring,
   data: DataGhost,
@@ -152,7 +152,7 @@ export const ConfirmConnectionPacket = struct({
 });
 
 export const ConnectPacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
   name: cstring,
   data: DataGhost,
@@ -163,21 +163,21 @@ export const ConnectPacket = struct({
 });
 
 export const PingPacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
 });
 
 export const PingEchoPacket = struct({
-  header: u32,
+  header: u8,
 });
 
 export const DisconnectPacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
 });
 
 export const MapChangePacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
   map_name: cstring,
   ticks: u32,
@@ -185,13 +185,13 @@ export const MapChangePacket = struct({
 });
 
 export const MessagePacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
   message: cstring,
 });
 
 export const CountdownPacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
   step: u8,
   duration: u32,
@@ -200,7 +200,7 @@ export const CountdownPacket = struct({
 });
 
 export const ConfirmCountdownPacket = struct({
-  header: u32,
+  header: u8,
   id: u32,
   step: u8,
 });
