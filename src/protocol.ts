@@ -33,10 +33,10 @@ export class IDataGhost {
     public data: number,
   ) {}
 
-  get viewOffset(): number {
+  get view_offset(): number {
     return this.data & 0b0111_1111;
   }
-  set viewOffset(value: number) {
+  set view_offset(value: number) {
     this.data |= value & 0b0111_1111;
   }
 
@@ -45,6 +45,15 @@ export class IDataGhost {
   }
   set grounded(value: boolean) {
     this.data |= value ? 0b1000_0000 : 0b0000_0000;
+  }
+
+  [Symbol.for('Deno.customInspect')]() {
+    const { position, view_angle, view_offset, grounded } = this;
+    const inspect = Deno.inspect({ position, view_angle, view_offset, grounded }, {
+      colors: true,
+      compact: false,
+    });
+    return `IDataGhost ${inspect.replaceAll('\n', '\n      ')}`;
   }
 }
 
@@ -173,4 +182,10 @@ export const MapChangePacket = {
   map_name: cstring,
   ticks: u32,
   ticks_total: u32,
+};
+
+export const MessagePacket = {
+  header: u32,
+  id: u32,
+  message: cstring,
 };

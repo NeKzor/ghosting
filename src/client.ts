@@ -4,9 +4,10 @@
 // deno-lint-ignore-file no-unused-vars
 
 import { tty } from 'cliffy/ansi/tty.ts';
+import { Input } from 'cliffy/prompt/input.ts';
 import { struct } from './byte_types.ts';
 import { getConfig } from './config.ts';
-import { IGhostEntity } from './protocol.ts';
+import { IDataGhost, IGhostEntity, MessagePacket } from './protocol.ts';
 import { DisconnectPacket, PingPacket } from './protocol.ts';
 import { ConfirmConnectionPacket, ConnectionPacket, ConnectPacket, Header } from './protocol.ts';
 import { getAvailablePort } from '@std/net';
@@ -94,9 +95,27 @@ const connect = async () => {
     return;
   }
 
-  const packet = struct(ConfirmConnectionPacket).unpack(data);
-  console.log(packet);
-  state.id = packet.id;
+  const { id, ghosts } = struct(ConfirmConnectionPacket).unpack(data);
+
+  state.id = id;
+
+  for (const ghost of ghosts) {
+    state.ghostPool.push(
+      new IGhostEntity(
+        ghost.id,
+        ghost.name,
+        new IDataGhost(
+          ghost.data.position,
+          ghost.data.view_angle,
+          ghost.data.data,
+        ),
+        ghost.model_name,
+        ghost.current_map,
+        ghost.color,
+        ghost.spectator,
+      ),
+    );
+  }
 
   listenTcp().catch((err) => {
     console.error(err);
@@ -149,9 +168,26 @@ const PacketHandler = {
     console.log(`Ping: ${ping}ms`);
   },
   [Header.CONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
-    const { name, spectator, current_map } = struct(ConnectPacket).unpack(data);
+    const { id, name, data: dataGhost, model_name, current_map, color, spectator } = struct(ConnectPacket).unpack(data);
+
     console.log(
       `${name}${spectator ? ' (spectator)' : ''} has connected in ${current_map.length ? current_map : 'the menu'}!`,
+    );
+
+    state.ghostPool.push(
+      new IGhostEntity(
+        id,
+        name,
+        new IDataGhost(
+          dataGhost.position,
+          dataGhost.view_angle,
+          dataGhost.data,
+        ),
+        model_name,
+        current_map,
+        color,
+        spectator,
+      ),
     );
   },
   [Header.DISCONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
@@ -194,9 +230,12 @@ const PacketHandler = {
     // TODO
     //const packet = Struct(Heart_BeatPacket).unpack(data);
   },
-  [Header.MESSAGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(MessagePacket).unpack(data);
+  [Header.MESSAGE]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = struct(MessagePacket).unpack(data);
+    const ghost = getGhostById(packet.id);
+    if (ghost) {
+      console.log(`${ghost.name}: ${packet.message}`);
+    }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
@@ -254,9 +293,11 @@ try {
       message: 'Command:',
       options: [
         { name: 'exit', value: 'exit' },
+        { name: 'state', value: 'state' },
         { name: 'ping', value: 'ping' },
         { name: 'disconnect', value: 'disconnect' },
         { name: 'map_change', value: 'map_change' },
+        { name: 'message', value: 'message' },
       ],
     });
 
@@ -264,6 +305,10 @@ try {
       case 'exit': {
         disconnect();
         Deno.exit(0);
+        break;
+      }
+      case 'state': {
+        console.dir(state);
         break;
       }
       case 'ping': {
@@ -287,6 +332,17 @@ try {
             map_name: 'sp_a1_intro2',
             ticks: Math.floor(Math.random() * 2) ? 0xffffffff : 123,
             ticks_total: 456_789,
+          }),
+        );
+        break;
+      }
+      case 'message': {
+        const message: string = await Input.prompt('Enter a message:');
+        await tcp.write(
+          struct(MessagePacket).pack({
+            header: Header.MESSAGE,
+            id: state.id,
+            message,
           }),
         );
         break;

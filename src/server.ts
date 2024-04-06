@@ -16,6 +16,7 @@ import {
   IDataGhost,
   IGhostEntity,
   MapChangePacket,
+  MessagePacket,
   PingEchoPacket,
   PingPacket,
 } from './protocol.ts';
@@ -26,8 +27,6 @@ const { server: { hostname, port }, logging } = await getConfig();
 logging.enabled && installLogger(logging.filename);
 
 const state = new State();
-
-state.addServerAsClient();
 
 const tcp = Deno.listen({
   hostname,
@@ -254,8 +253,19 @@ const PacketHandler = {
     //const packet = Struct(Heart_BeatPacket).unpack(data);
   },
   [Header.MESSAGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Struct(MessagePacket).unpack(data);
+    const { id, message } = struct(MessagePacket).unpack(data);
+    const client = getClientById(id);
+    if (client) {
+      log.info(`[message] ${client.name}: ${message}`);
+
+      await broadcast(
+        struct(MessagePacket).pack({
+          header: Header.MESSAGE,
+          id,
+          message,
+        }),
+      );
+    }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO

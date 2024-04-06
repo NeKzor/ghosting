@@ -18,6 +18,8 @@
     - [ping_echo_packet](#ping_echo_packet)
   - [Map Change](#map_change)
     - [map_change_packet](#map_change_packet)
+  - [Message](#message)
+    - [message_packet](#message_packet)
 - [Enums](#enums)
   - [HEADER](#header)
 - [Structs](#structs)
@@ -37,7 +39,7 @@
 - ~~[x] Stop Server~~
 - [x] Map Change
 - [ ] Heart Beat
-- [ ] Message
+- [x] Message
 - [ ] Countdown
 - [ ] Update
 - [ ] Speedrun Finish
@@ -62,9 +64,9 @@
 | [CONNECT](#connect)       | 2     |
 | [DISCONNECT](#disconnect) | 3     |
 | STOP_SERVER               | 4     |
-| MAP_CHANGE                | 5     |
+| [MAP_CHANGE](#map-change) | 5     |
 | HEART_BEAT                | 6     |
-| MESSAGE                   | 7     |
+| [MESSAGE](#message)       | 7     |
 | COUNTDOWN                 | 8     |
 | UPDATE                    | 9     |
 | SPEEDRUN_FINISH           | 10    |
@@ -76,7 +78,7 @@
 ```mermaid
 sequenceDiagram
     participant Server
-    Note left of Server: ghost.portal2.sr:53000
+    Note left of Server: ghost.portal2.sr
     participant Client
     Note right of Client: SourceAutoRecord
     participant Clients
@@ -128,7 +130,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Server
-    Note left of Server: ghost.portal2.sr:53000
+    Note left of Server: ghost.portal2.sr
     participant Client
     Note right of Client: SourceAutoRecord
     participant Clients
@@ -150,8 +152,9 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Server
-    Note left of Server: ghost.portal2.sr:53000
+    Note left of Server: ghost.portal2.sr
     participant Client
+    Note right of Client: SourceAutoRecord
 
     Client->>Server: ping_packet
 
@@ -176,7 +179,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Server
-    Note left of Server: ghost.portal2.sr:53000
+    Note left of Server: ghost.portal2.sr
     participant Client
     Note right of Client: SourceAutoRecord
     participant Clients
@@ -195,6 +198,29 @@ sequenceDiagram
 | map_name          | CString |              |
 | ticks             | u32     |              |
 | tick_total        | u32     |              |
+
+### Message
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Client->>Server: message_packet
+
+    Server->>Clients: message_packet (broadcast)
+```
+
+#### message_packet
+
+| Field             | Type    | Description |
+| ----------------- | ------- | ----------- |
+| [header](#header) | u32     | `MESSAGE`   |
+| id                | u32     |             |
+| message           | CString |             |
 
 ## Structs
 
