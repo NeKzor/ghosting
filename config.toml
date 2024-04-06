@@ -1,0 +1,11 @@
+[server]
+hostname = "127.0.0.1"
+port = 53000
+
+[client]
+name = "NeKz"
+model_name = "models/props/food_can/food_can_open.mdl"
+current_map = "sp_a4_intro"
+tcp_only = false
+color = { r = 0, g = 0, b = 0 }
+spectator = false

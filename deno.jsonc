@@ -1,0 +1,26 @@
+{
+  "tasks": {
+    // Start server.
+    "server": "deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000 --watch src/server.ts",
+    // Simulate a client connection.
+    "client": "deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000,127.0.0.1:53001 src/client.ts",
+    // Run format check, linter and type check.
+    "check": "deno fmt --check && deno lint && deno task check:types",
+    // Run type check only.
+    "check:types": "deno check --no-lock src/**/*.ts"
+  },
+  "imports": {
+    "@denosaurs/byte-type": "jsr:@denosaurs/byte-type@^0.4.0",
+    "@std/toml": "jsr:@std/toml@^0.221.0"
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 120,
+    "indentWidth": 2,
+    "singleQuote": true,
+    "proseWrap": "preserve"
+  },
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true
+  }
+}
