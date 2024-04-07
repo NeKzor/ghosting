@@ -8,53 +8,50 @@
 - [Protocol](#protocol)
   - [Header](#header)
   - [Connect](#connect)
-    - [connection_packet](#connection_packet)
-    - [confirm_connection_packet](#confirm_connection_packet)
-    - [connect_packet](#connect_packet)
   - [Disconnect](#connect)
-    - [disconnect_packet](#disconnect_packet)
   - [Ping](#ping)
-    - [ping_packet](#ping_packet)
-    - [ping_echo_packet](#ping_echo_packet)
   - [Map Change](#map_change)
-    - [map_change_packet](#map_change_packet)
   - [Message](#message)
-    - [message_packet](#message_packet)
   - [Countdown](#countdown)
-    - [countdown_packet](#countdown_packet)
-    - [confirm_countdown_packet](#confirm_countdown_packet)
+  - [Update](#update)
   - [Speedrun Finish](#speedrun-finish)
-    - [speedrun_finish_packet](#speedrun_finish_packet)
   - [Model Change](#model-change)
-    - [model_change_packet](#model_change_packet)
   - [Color Change](#color-change)
-    - [color_change_packet](#color_change_packet)
-- [Structs](#structs)
-  - [GhostEntity](#ghostentity)
-  - [Color](#color)
-  - [Vector](#vector)
-  - [DataGhost](#dataghost)
+  - [Structs](#structs)
+    - [GhostEntity](#ghostentity)
+    - [Color](#color)
+    - [Vector](#vector)
+    - [DataGhost](#dataghost)
+    - [DataGhostUpdate](#dataghostupdate)
 - [License](#license)
 
 ## Status
 
 ### TODO
 
-- [x] Ping
-- [x] Connect
-- [x] Disconnect
-- [ ] Stop Server
-- [x] Map Change
-- [ ] Heart Beat
-- [x] Message
-- [x] Countdown
-- [ ] Update
-- [x] Speedrun Finish
-- [x] Model Change
-- [x] Color Change
+- [ ] Protocol
+  - [x] Ping
+  - [x] Connect
+  - [x] Disconnect
+  - [ ] Stop Server
+  - [x] Map Change
+  - [ ] Heart Beat
+  - [x] Message
+  - [x] Countdown
+  - [x] Update
+  - [x] Speedrun Finish
+  - [x] Model Change
+  - [x] Color Change
+- [ ] TCP/UDP mode
+- [ ] Implement all server commands
+- [ ] Testing
+  - [ ] Client + GhostServer
+  - [ ] Server + SourceAutoRecord
+- [ ] Resolve notes
 
 ### Notes
 
+- No protocol version
 - ID is not a unique identifier
 - Header value gets ignored when starting a connection
 - Questionable `STOP_SERVER` implementation
@@ -76,7 +73,7 @@
 | HEART_BEAT                          | 6     |
 | [MESSAGE](#message)                 | 7     |
 | [COUNTDOWN](#countdown)             | 8     |
-| UPDATE                              | 9     |
+| [UPDATE](#update)                   | 9     |
 | [SPEEDRUN_FINISH](#speedrun-finish) | 10    |
 | [MODEL_CHANGE](#model-change)       | 11    |
 | [COLOR_CHANGE](#color-change)       | 12    |
@@ -264,6 +261,45 @@ sequenceDiagram
 | id                | u32  | Server sends 0 |
 | step              | u32  | 1              |
 
+### Update
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Server->>Clients: bulk_update_packet (broadcast)
+    Server->>Server: delay 50ms
+    Server->>Clients: bulk_update_packet (broadcast)
+    Server->>Server: delay 50ms
+
+    Client->>Server: update_packet
+
+    Server->>Clients: bulk_update_packet (broadcast)
+    Server->>Server: delay 50ms
+    Server->>Clients: bulk_update_packet (broadcast)
+```
+
+#### bulk_update_packet
+
+| Field             | Type                                  | Description |
+| ----------------- | ------------------------------------- | ----------- |
+| [header](#header) | u8                                    | `UPDATE`    |
+| id                | u32                                   | 0           |
+| count             | u32                                   |             |
+| update            | [DataGhostUpdate](#dataghostupdate)[] |             |
+
+#### update_packet
+
+| Field             | Type                    | Description |
+| ----------------- | ----------------------- | ----------- |
+| [header](#header) | u8                      | `UPDATE`    |
+| id                | u32                     |             |
+| data              | [DataGhost](#dataghost) |             |
+
 ### Speedrun Finish
 
 ```mermaid
@@ -272,7 +308,7 @@ sequenceDiagram
     Note left of Server: ghost.portal2.sr
     participant Client
     Note right of Client: SourceAutoRecord
-  participant Clients
+    participant Clients
 
     Client->>Server: speedrun_finish_packet
     Server->>Clients: speedrun_finish_packet (broadcast)
@@ -330,9 +366,9 @@ sequenceDiagram
 | id                | u32             |                |
 | color             | [Color](#color) |                |
 
-## Structs
+### Structs
 
-### GhostEntity
+#### GhostEntity
 
 | Field       | Type                    | Description |
 | ----------- | ----------------------- | ----------- |
@@ -344,7 +380,7 @@ sequenceDiagram
 | color       | [Color](#color)         |             |
 | spectator   | bool                    |             |
 
-### Color
+#### Color
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
@@ -352,7 +388,7 @@ sequenceDiagram
 | g     | u32  |             |
 | b     | u32  |             |
 
-### Vector
+#### Vector
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
@@ -360,7 +396,7 @@ sequenceDiagram
 | y     | f32  |             |
 | z     | f32  |             |
 
-### DataGhost
+#### DataGhost
 
 | Field      | Type              | Description                |
 | ---------- | ----------------- | -------------------------- |
@@ -374,6 +410,13 @@ sequenceDiagram
 | ----------- | ---- | -------------------------- |
 | view_offset | f32  | `data & 0x7F` (bit 1 to 7) |
 | grounded    | bool | `data & 0x80` (bit 8)      |
+
+#### DataGhostUpdate
+
+| Field | Type                     | Description |
+| ----- | ------------------------ | ----------- |
+| id    | u32                      |             |
+| data  | [DataGhost](#dataghost#) |             |
 
 ## License
 

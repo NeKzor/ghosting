@@ -1,9 +1,9 @@
 {
   "tasks": {
     // Start server.
-    "start": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-read=config.toml,logs,src --allow-write=logs --allow-net=jsr.io,127.0.0.1:53000 --watch src/main.ts",
+    "start": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs,src --allow-write=logs --allow-net=jsr.io,127.0.0.1:53000 --watch src/main.ts",
     // Start server without the CLI.
-    "server": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-read=config.toml,logs --allow-write=logs --allow-net=127.0.0.1:53000 --watch src/server.ts",
+    "server": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs --allow-write=logs --allow-net=127.0.0.1:53000 --watch src/server.ts",
     // Simulate a client connection.
     "client": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-read=config.toml --allow-net=127.0.0.1:53000,127.0.0.1:53001 src/client.ts",
     // Run format check, linter and type check.

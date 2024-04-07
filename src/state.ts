@@ -4,6 +4,7 @@
 import { IClient } from './protocol.ts';
 
 export class State {
+  isRunning = false;
   lastId = 1;
   clients: IClient[] = [];
   acceptingSpectators = true;

@@ -123,6 +123,11 @@ export const DataGhost = new Struct({
   data: u8,
 });
 
+export const DataGhostUpdate = new Struct({
+  id: u32,
+  data: DataGhost,
+});
+
 export const GhostEntity = new Struct({
   id: u32,
   name: cstring,
@@ -203,6 +208,19 @@ export const ConfirmCountdownPacket = struct({
   header: u8,
   id: u32,
   step: u8,
+});
+
+export const BulkUpdatePacket = struct({
+  header: u8,
+  id: u32,
+  count: new PhantomData(Number),
+  data: new VariableArray(DataGhostUpdate),
+});
+
+export const UpdatePacket = struct({
+  header: u8,
+  id: u32,
+  data: DataGhost,
 });
 
 export const SpeedrunFinishPacket = struct({

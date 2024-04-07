@@ -8,6 +8,7 @@ import { Input } from 'cliffy/prompt/input.ts';
 import { Select } from 'cliffy/prompt/select.ts';
 import { getConfig } from './config.ts';
 import {
+  BulkUpdatePacket,
   ColorChangePacket,
   ConfirmConnectionPacket,
   ConfirmCountdownPacket,
@@ -23,6 +24,7 @@ import {
   ModelChangePacket,
   PingPacket,
   SpeedrunFinishPacket,
+  UpdatePacket,
 } from './protocol.ts';
 
 const {
@@ -266,9 +268,19 @@ const PacketHandler = {
       console.log(`Started countdown!`);
     }
   },
-  [Header.UPDATE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = UpdatePacket.unpack(data);
+  [Header.UPDATE]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = BulkUpdatePacket.unpack(data);
+    if (packet.id === 0) {
+      for (const { id, data } of packet.data) {
+        const ghost = getGhostById(id);
+        if (ghost) {
+          //console.log('Updating ghost', ghost.id, data);
+          ghost.data.position = data.position;
+          ghost.data.view_angle = data.view_angle;
+          ghost.data.data = data.data;
+        }
+      }
+    }
   },
   [Header.SPEEDRUN_FINISH]: (data: Uint8Array, conn: Deno.Conn) => {
     const packet = SpeedrunFinishPacket.unpack(data);
@@ -375,6 +387,27 @@ try {
           duration: 10,
           pre_commands: 'sv_cheats 1',
           post_commands: 'sv_cheats 0',
+        }),
+      );
+    },
+    update: async () => {
+      await tcp.write(
+        UpdatePacket.pack({
+          header: Header.UPDATE,
+          id: state.id,
+          data: {
+            position: {
+              x: 123,
+              y: 456,
+              z: 789,
+            },
+            view_angle: {
+              x: 45,
+              y: 90,
+              z: 0,
+            },
+            data: 0b1100_0000,
+          },
         }),
       );
     },

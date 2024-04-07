@@ -13,6 +13,7 @@ import { ServerEventType } from './events.ts';
 import { CommandEvent, EventType } from './events.ts';
 import { installLogger, log } from './logger.ts';
 import {
+  BulkUpdatePacket,
   ColorChangePacket,
   ConfirmConnectionPacket,
   ConfirmCountdownPacket,
@@ -30,6 +31,7 @@ import {
   PingEchoPacket,
   PingPacket,
   SpeedrunFinishPacket,
+  UpdatePacket,
 } from './protocol.ts';
 import { State } from './state.ts';
 
@@ -293,9 +295,14 @@ const PacketHandler = {
       );
     }
   },
-  [Header.UPDATE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = UpdatePacket.unpack(data);
+  [Header.UPDATE]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = UpdatePacket.unpack(data);
+    const client = getClientById(packet.id);
+    if (client) {
+      client.data.position = packet.data.position;
+      client.data.view_angle = packet.data.view_angle;
+      client.data.data = packet.data.data;
+    }
   },
   [Header.SPEEDRUN_FINISH]: async (data: Uint8Array, conn: Deno.Conn) => {
     const { id, time } = SpeedrunFinishPacket.unpack(data);
@@ -404,4 +411,33 @@ self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) =>
   }
 });
 
-await Promise.all([listenTcp(), listenUdp()]);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const UPDATE_RATE_MS = 50;
+
+const main = async () => {
+  state.isRunning = true;
+
+  let lastUpdate = 0;
+
+  while (state.isRunning) {
+    const now = performance.now();
+
+    if (now > (lastUpdate + UPDATE_RATE_MS)) {
+      const count = state.clients.length;
+      const data = state.clients.map(({ id, data }) => ({ id, data }));
+
+      await broadcast(BulkUpdatePacket.pack({
+        header: Header.UPDATE,
+        id: 0,
+        count,
+        data,
+      }));
+
+      lastUpdate = now;
+    }
+
+    await sleep(10);
+  }
+};
+
+await Promise.all([main(), listenTcp(), listenUdp()]);
