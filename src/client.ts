@@ -16,7 +16,6 @@ import {
   CountdownPacket,
   DisconnectPacket,
   Header,
-  HEADER_OFFSET,
   HeartBeatPacket,
   IDataGhost,
   IGhostEntity,
@@ -26,6 +25,7 @@ import {
   PACKET_BUFFER_SIZE,
   PingPacket,
   SpeedrunFinishPacket,
+  TCP_HEADER_OFFSET,
   UpdatePacket,
 } from './protocol.ts';
 
@@ -163,7 +163,7 @@ const connect = async () => {
 const listenTcp = async () => {
   const data = new Uint8Array(PACKET_BUFFER_SIZE);
   while (await tcp.read(data)) {
-    const header = data[HEADER_OFFSET]!;
+    const header = data[TCP_HEADER_OFFSET]!;
     //console.log({ data, header });
 
     if (header > Header.LAST) {
@@ -182,7 +182,7 @@ const listenTcp = async () => {
 const listenUdp = async () => {
   const data = new Uint8Array(PACKET_BUFFER_SIZE);
   while (await udp.receive(data)) {
-    const header = data[HEADER_OFFSET]!;
+    const header = data[TCP_HEADER_OFFSET]!;
     console.log({ header });
 
     if (header > Header.LAST) {

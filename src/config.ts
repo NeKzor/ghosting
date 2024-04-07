@@ -13,6 +13,7 @@ export const getConfig = async () => {
       port: number;
     };
     logging: {
+      level: string;
       console: boolean;
       file: boolean;
       filename: string;

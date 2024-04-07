@@ -51,6 +51,7 @@ const formatArgs = (args: string | any | any[]): string => {
 };
 
 export const installLogger = (options: {
+  level: string;
   console: boolean;
   file: boolean;
   filename: string;
@@ -66,9 +67,20 @@ export const installLogger = (options: {
   options.console && handlers.push('console');
   options.file && handlers.push('file');
 
+  const level = options.level.toUpperCase();
+  const levelName = _log.LogLevelNames.find((levelName) => levelName === level);
+  if (!levelName) {
+    console.error(
+      `${red('ERROR')}: Invalid log level "${options.level}". Must be one of the following: ${
+        _log.LogLevelNames.map((levelName) => levelName.toLowerCase()).join(', ')
+      }`,
+    );
+    return false;
+  }
+
   _log.setup({
     handlers: {
-      console: new _log.ConsoleHandler('DEBUG', {
+      console: new _log.ConsoleHandler(levelName, {
         useColors: false,
         formatter: ({ datetime, level, levelName, msg, args }) => {
           return `${formatDatetime(datetime)} ${formatLevel(level, levelName)} ${msg}${
@@ -76,7 +88,7 @@ export const installLogger = (options: {
           }`;
         },
       }),
-      file: new FileLogger('DEBUG', {
+      file: new FileLogger(levelName, {
         maxBytes: 100 * 1024 * 1024,
         maxBackupCount: 7,
         filename: options.filename,
@@ -87,9 +99,11 @@ export const installLogger = (options: {
     },
     loggers: {
       default: {
-        level: 'DEBUG',
+        level: levelName,
         handlers,
       },
     },
   });
+
+  return true;
 };

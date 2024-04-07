@@ -140,8 +140,11 @@ export const GhostEntity = new Struct({
 
 export const PACKET_BUFFER_SIZE = 1_024;
 
-export const HEADER_OFFSET = 0x04;
-export const ID_OFFSET = 0x05;
+export const TCP_HEADER_OFFSET = 0x04;
+export const TCP_ID_OFFSET = 0x05;
+
+export const UDP_HEADER_OFFSET = 0x00;
+export const UDP_ID_OFFSET = 0x01;
 
 export const ConnectionPacket = sf_packet({
   header: u8,
@@ -215,7 +218,7 @@ export const CountdownPacket = sf_packet({
   post_commands: std_string,
 });
 
-export const COUNTDOWN_STEP_OFFSET = HEADER_OFFSET + CountdownPacket.offsetOf('step');
+export const COUNTDOWN_STEP_OFFSET = TCP_HEADER_OFFSET + CountdownPacket.offsetOf('step');
 
 export const ConfirmCountdownPacket = sf_packet({
   header: u8,

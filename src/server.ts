@@ -18,10 +18,8 @@ import {
   CountdownPacket,
   DisconnectPacket,
   Header,
-  HEADER_OFFSET,
   HeartBeatPacket,
   IClient,
-  ID_OFFSET,
   IDataGhost,
   IGhostEntity,
   MapChangePacket,
@@ -31,13 +29,19 @@ import {
   PingEchoPacket,
   PingPacket,
   SpeedrunFinishPacket,
+  TCP_HEADER_OFFSET,
+  TCP_ID_OFFSET,
+  UDP_HEADER_OFFSET,
+  UDP_ID_OFFSET,
   UpdatePacket,
 } from './protocol.ts';
 import { State } from './state.ts';
 
 const { server: { hostname, port }, logging } = await getConfig();
 
-installLogger(logging);
+if (!installLogger(logging)) {
+  Deno.exit(1);
+}
 
 const state = new State();
 
@@ -81,7 +85,7 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
 
     const data = new Uint8Array(PACKET_BUFFER_SIZE);
     while (await conn.read(data)) {
-      const header = data[HEADER_OFFSET]!;
+      const header = data[TCP_HEADER_OFFSET]!;
 
       if (header > Header.LAST) {
         break;
@@ -90,7 +94,7 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
       header !== Header.HEART_BEAT && header !== Header.UPDATE && log.debug(conn.remoteAddr, header);
 
       const handler = PacketHandler[header as Header];
-      await handler(data);
+      await handler(data, false);
     }
 
     conn.close();
@@ -107,14 +111,14 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
 
 const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.Addr]) => {
   try {
-    const header = data[HEADER_OFFSET]!;
-    const id = data[ID_OFFSET]!;
+    const header = data[UDP_HEADER_OFFSET]!;
+    const id = data[UDP_ID_OFFSET]!;
 
     if (header > Header.LAST) {
       return;
     }
 
-    header !== Header.HEART_BEAT && log.debug(remoteAddr, header);
+    header !== Header.HEART_BEAT && header !== Header.UPDATE && log.debug(remoteAddr, header);
 
     const client = getClientById(id);
     if (client) {
@@ -123,7 +127,7 @@ const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.Addr]) 
     }
 
     const handler = PacketHandler[header as Header];
-    await handler(data);
+    await handler(data, true);
   } catch (err) {
     if (
       !(err instanceof Deno.errors.BrokenPipe) &&
@@ -318,8 +322,8 @@ const PacketHandler = {
       );
     }
   },
-  [Header.COUNTDOWN]: async (data: Uint8Array) => {
-    const id = data[ID_OFFSET]!;
+  [Header.COUNTDOWN]: async (data: Uint8Array, isUdp: boolean) => {
+    const id = data[isUdp ? UDP_ID_OFFSET : TCP_ID_OFFSET]!;
     await getClientById(id)?.tcp_socket.write(
       ConfirmCountdownPacket.pack({
         header: Header.COUNTDOWN,

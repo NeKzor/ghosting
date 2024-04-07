@@ -5,6 +5,10 @@
 [p2sr-GhostServer]: https://github.com/p2sr/GhostServer
 
 - [Status](#status)
+- [Setup](#setup)
+  - [Requirements](#requirements)
+  - [Tasks](#tasks)
+  - [Config](#config)
 - [Protocol](#protocol)
   - [Packets](#packets)
   - [Header](#header)
@@ -36,7 +40,7 @@
   - [x] Ping
   - [x] Connect
   - [x] Disconnect
-  - [-] Stop Server
+  - [x] Stop Server (not supported)
   - [x] Map Change
   - [x] Heart Beat
   - [x] Message
@@ -46,34 +50,90 @@
   - [x] Model Change
   - [x] Color Change
 - [x] TCP/UDP mode
-- [ ] Implement all server commands
+- [ ] Implement old server commands
+  - [x] exit
+  - [ ] help
+  - [x] list
+  - [x] countdown_set
+  - [x] countdown
+  - [ ] disconnect
+  - [ ] disconnect_id
+  - [ ] ban
+  - [ ] ban_id
+  - [x] accept_players
+  - [x] refuse_players
+  - [x] accept_spectators
+  - [x] refuse_spectators
+  - [ ] server_msg
+- [ ] Add useful client commands
+  - [ ] Smoke test
+  - [ ] Fuzzing test
 - [ ] Testing
   - [x] Client + GhostServer
   - [ ] Server + SourceAutoRecord
-- [ ] Resolve points below
+- [ ] Deployment
+  - [ ] CI
+  - [ ] Docker image
+  - [ ] Server
 
-### Notes/Nitpicks/Unresolved
+### Protocol notes, nitpicks and unresolved questions
 
 - ID is not a unique identifier
-- Header value gets ignored when starting a connection
-- Questionable `STOP_SERVER` implementation
+- `STOP_SERVER` packet is a kill switch
+- `SPEEDRUN_FINISH` formats and sends the timer value as a string
 - Disconnect is checked by IP
-- Time in `SPEEDRUN_FINISH` is formatted and send as string
-- Heart Beat instead of Heartbeat
+- Header value gets ignored when starting a connection
+- "Heart Beat" should be called "Heartbeat"
+
+## Setup
+
+### Requirements
+
+- [Deno runtime](https://deno.com)
+
+### Tasks
+
+Start any task with `deno task <name>`.
+
+| Task     | Description                   |
+| -------- | ----------------------------- |
+| `start`  | Start the server in CLI mode. |
+| `server` | Start the server.             |
+
+### Config
+
+Config file is called: `config.toml`
+
+```toml
+[server]
+hostname = "127.0.0.1"
+port = 53000
+
+[logging]
+level = "debug" # debug, info, warn, error, critical
+console = true # might want to turn it of in CLI mode
+file = true
+filename = "logs/server.log"
+```
 
 ## Protocol
 
 ### Endianness
 
-SourceAutoRecord uses SFML which encodes primitive types like `u16`, `u32` and `f32` in big-endian (BE).
+SourceAutoRecord uses [SFML][sfml] which encodes primitive types like `u16`, `u32` and `f32` in big-endian (BE).
+
+[sfml]: https://www.sfml-dev.org
 
 ### Packets
 
-Internal representation of `sf::Packet` from SFML. Every packet includes the total length of the data.
+Ths is the encoded representation of [sf::Packet][sf-packet] from SFML. Every TCP packet includes a field for the total
+length of the data.
+
+[sf-packet]: https://www.sfml-dev.org/documentation/2.6.1/classsf_1_1Packet.php
 
 | Field  | Type            | Description                       |
 | ------ | --------------- | --------------------------------- |
-| length | u32             | Length of `data` field.           |
+| length | u32             | TCP only: length of `data` field. |
 | data   | Header + Packet | Packet of type Connect, Ping etc. |
 
 ### Header
@@ -128,11 +188,11 @@ sequenceDiagram
 
 Note: This packet does not have a header. It is handled immediately after the connection_packet.
 
-| Field     | Type                           | Description |
-| --------- | ------------------------------ | ----------- |
-| id        | u32                            |             |
-| nb_ghosts | u32                            |             |
-| ghosts    | [GhostEntity[]](#ghost-entity) |             |
+| Field     | Type                                    | Description |
+| --------- | --------------------------------------- | ----------- |
+| id        | u32                                     |             |
+| nb_ghosts | u32                                     |             |
+| ghosts    | [GhostEntity[nb_ghosts]](#ghost-entity) |             |
 
 #### connect_packet
 

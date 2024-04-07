@@ -3,10 +3,12 @@ hostname = "127.0.0.1"
 port = 53000
 
 [logging]
-console = true
+level = "info" # debug, info, warn, error, critical
+console = true # might want to turn it of in CLI mode
 file = true
 filename = "logs/server.log"
 
+# for local tests
 [client]
 name = "NeKz"
 model_name = "models/props/food_can/food_can_open.mdl"
