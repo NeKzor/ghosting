@@ -1,8 +1,6 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-// deno-lint-ignore-file no-unused-vars
-
 import { tty } from 'cliffy/ansi/tty.ts';
 import { Input } from 'cliffy/prompt/input.ts';
 import { Select } from 'cliffy/prompt/select.ts';
@@ -17,6 +15,7 @@ import {
   CountdownPacket,
   DisconnectPacket,
   Header,
+  HeartBeatPacket,
   IDataGhost,
   IGhostEntity,
   MapChangePacket,
@@ -65,12 +64,24 @@ const tcp = await (async () => {
   }
 })();
 
-// const udp = Deno.listenDatagram({
-//   port: port + 1,
-//   transport: 'udp',
-// });
+const udp = (() => {
+  try {
+    return Deno.listenDatagram({
+      hostname,
+      port: (tcp.localAddr as Deno.NetAddr).port,
+      transport: 'udp',
+    });
+  } catch (err) {
+    if (err instanceof Deno.errors.AddrInUse) {
+      console.log(err.message);
+    } else {
+      console.error(err);
+    }
+    Deno.exit(1);
+  }
+})();
 
-const _address: Deno.NetAddr = {
+const address: Deno.NetAddr = {
   transport: 'udp',
   hostname,
   port,
@@ -130,13 +141,19 @@ const connect = async () => {
     );
   }
 
+  console.log('Connected', tcp.localAddr, tcp.remoteAddr, udp.addr);
+
   listenTcp().catch((err) => {
     console.error(err);
     disconnect();
     Deno.exit(1);
   });
 
-  //await udp.send(new Uint8Array(packet), address);
+  listenUdp().catch((err) => {
+    console.error(err);
+    disconnect();
+    Deno.exit(1);
+  });
 };
 
 const listenTcp = async () => {
@@ -145,12 +162,30 @@ const listenTcp = async () => {
     const header = data[0]!;
 
     if (header > Header.LAST) {
-      console.log(`Ignoring invalid header value ${header}`);
-      continue;
+      console.error(`[tcp] Invalid header value ${header}`);
+      break;
     }
 
     const handler = PacketHandler[header as Header];
-    await handler(data, tcp);
+    await handler(data, false);
+  }
+
+  disconnect();
+  Deno.exit(0);
+};
+
+const listenUdp = async () => {
+  const data = new Uint8Array(1024);
+  while (await udp.receive(data)) {
+    const header = data[0]!;
+
+    if (header > Header.LAST) {
+      console.error(`[udp] Invalid header value ${header}`);
+      break;
+    }
+
+    const handler = PacketHandler[header as Header];
+    await handler(data, true);
   }
 
   disconnect();
@@ -173,14 +208,14 @@ const getGhostById = (id: number) => {
 };
 
 const PacketHandler = {
-  [Header.NONE]: async (_data: Uint8Array, _conn: Deno.Conn) => {
+  [Header.NONE]: () => {
     /* no-op */
   },
-  [Header.PING]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.PING]: () => {
     const ping = new Date().getTime() - state.pingClock.getTime();
     console.log(`Ping: ${ping}ms`);
   },
-  [Header.CONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.CONNECT]: (data: Uint8Array) => {
     const { id, name, data: dataGhost, model_name, current_map, color, spectator } = ConnectPacket.unpack(data);
 
     console.log(
@@ -203,7 +238,7 @@ const PacketHandler = {
       ),
     );
   },
-  [Header.DISCONNECT]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.DISCONNECT]: (data: Uint8Array) => {
     const { id } = DisconnectPacket.unpack(data);
 
     let idx = 0;
@@ -222,10 +257,10 @@ const PacketHandler = {
 
     toErase !== -1 && state.ghostPool.splice(toErase, 1);
   },
-  [Header.STOP_SERVER]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.STOP_SERVER]: async () => {
     /* no-op */
   },
-  [Header.MAP_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.MAP_CHANGE]: (data: Uint8Array) => {
     const packet = MapChangePacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
@@ -239,36 +274,53 @@ const PacketHandler = {
       }
     }
   },
-  [Header.HEART_BEAT]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = HeartBeatPacket.unpack(data);
+  [Header.HEART_BEAT]: async (data: Uint8Array, isUdp: boolean) => {
+    const { token } = HeartBeatPacket.unpack(data);
+
+    //console.log({ token, transport: isUdp ? 'udp' : 'tcp' });
+
+    const packet = HeartBeatPacket.pack({
+      header: Header.HEART_BEAT,
+      id: state.id,
+      token,
+    });
+
+    if (isUdp) {
+      await udp.send(packet, address);
+    } else {
+      await tcp.write(packet);
+    }
   },
-  [Header.MESSAGE]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.MESSAGE]: (data: Uint8Array) => {
     const packet = MessagePacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
       console.log(`${ghost.name}: ${packet.message}`);
     }
   },
-  [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
-    const step = data[8];
+  [Header.COUNTDOWN]: async (data: Uint8Array, isUdp: boolean) => {
+    const step = data[5]!;
     if (step === 0) {
       const { duration, pre_commands, post_commands } = CountdownPacket.unpack(data);
 
       console.log(`Countdown setup: ${duration}, ${pre_commands}, ${post_commands}`);
 
-      await conn.write(
-        ConfirmCountdownPacket.pack({
-          header: Header.COUNTDOWN,
-          id: state.id,
-          step: 1,
-        }),
-      );
+      const packet = ConfirmCountdownPacket.pack({
+        header: Header.COUNTDOWN,
+        id: state.id,
+        step: 1,
+      });
+
+      if (isUdp) {
+        await udp.send(packet, address);
+      } else {
+        await tcp.write(packet);
+      }
     } else {
       console.log(`Started countdown!`);
     }
   },
-  [Header.UPDATE]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.UPDATE]: (data: Uint8Array) => {
     const packet = BulkUpdatePacket.unpack(data);
     if (packet.id === 0) {
       for (const { id, data } of packet.data) {
@@ -282,14 +334,14 @@ const PacketHandler = {
       }
     }
   },
-  [Header.SPEEDRUN_FINISH]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.SPEEDRUN_FINISH]: (data: Uint8Array) => {
     const packet = SpeedrunFinishPacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
       console.log(`${ghost.name} has finished on ${ghost.current_map} in ${packet.time}`);
     }
   },
-  [Header.MODEL_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.MODEL_CHANGE]: (data: Uint8Array) => {
     const packet = ModelChangePacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
@@ -298,7 +350,7 @@ const PacketHandler = {
       console.log(`${ghost.name} changed model from ${oldModel} to ${ghost.model_name}`);
     }
   },
-  [Header.COLOR_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.COLOR_CHANGE]: (data: Uint8Array) => {
     const packet = ColorChangePacket.unpack(data);
     const ghost = getGhostById(packet.id);
     if (ghost) {
@@ -324,7 +376,7 @@ const disconnect = () => {
   } catch {
   }
   try {
-    //udp.close();
+    udp.close();
     // deno-lint-ignore no-empty
   } catch {
   }

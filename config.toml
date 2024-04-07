@@ -4,7 +4,7 @@ port = 53000
 
 [logging]
 console = false
-file = false
+file = true
 filename = "logs/server.log"
 
 [client]

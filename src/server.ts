@@ -1,8 +1,6 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-// deno-lint-ignore-file no-unused-vars require-await
-
 /// <reference no-default-lib="true" />
 /// <reference lib="deno.worker" />
 /// <reference lib="deno.unstable" />
@@ -22,6 +20,7 @@ import {
   CountdownPacket,
   DisconnectPacket,
   Header,
+  HeartBeatPacket,
   IClient,
   IDataGhost,
   IGhostEntity,
@@ -55,11 +54,18 @@ const udp = Deno.listenDatagram({
 
 const listenTcp = async () => {
   for await (const conn of tcp) {
-    handleConnection(conn).catch(log.error);
+    handleTcpConnection(conn).catch(log.error);
   }
 };
 
-const handleConnection = async (conn: Deno.Conn) => {
+const listenUdp = async () => {
+  for await (const [_data, _address] of udp) {
+    // TODO
+    //handleUdpConnection(data, address).catch(log.error);
+  }
+};
+
+const handleTcpConnection = async (conn: Deno.Conn) => {
   try {
     log.info('NEW CONNECTION');
     const connection = new Uint8Array(1024);
@@ -73,48 +79,39 @@ const handleConnection = async (conn: Deno.Conn) => {
     const data = new Uint8Array(1024);
     while (await conn.read(data)) {
       const header = data[0]!;
-      log.info(conn.remoteAddr, header);
 
       if (header > Header.LAST) {
-        log.info(`Ignoring invalid header value ${header}`);
-        return;
+        break;
       }
 
+      header !== Header.HEART_BEAT && log.debug(conn.remoteAddr, header);
+
       const handler = PacketHandler[header as Header];
-      await handler(data, conn);
+      await handler(data);
     }
 
     conn.close();
   } catch (err) {
-    if (!(err instanceof Deno.errors.BrokenPipe) && !(err instanceof Deno.errors.BadResource)) {
+    if (
+      !(err instanceof Deno.errors.BrokenPipe) &&
+      !(err instanceof Deno.errors.BadResource) &&
+      !(err instanceof Deno.errors.Interrupted)
+    ) {
       log.error(err);
     }
   }
 };
 
-const listenUdp = async () => {
-  for await (const [data, address] of udp) {
-    log.info(data, address);
-  }
-};
-
 const broadcast = async (packet: Uint8Array) => {
-  const clients: IClient[] = [];
-
   for (const client of state.clients) {
     try {
-      if (client.tcp_socket) {
-        await client.tcp_socket.write(packet);
-        clients.push(client);
-      }
+      await client.tcp_socket.write(packet);
     } catch (err) {
       if (!(err instanceof Deno.errors.BadResource)) {
         log.error(err);
       }
     }
   }
-
-  state.clients = clients;
 };
 
 const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
@@ -142,7 +139,7 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
     packet.tcp_only,
     packet.color,
     0,
-    false,
+    true,
     false,
     packet.spectator,
   );
@@ -185,27 +182,30 @@ const disconnectPlayer = async (clientPlayer: IClient, reason: string) => {
     id: clientPlayer.id,
   });
 
-  const clients: IClient[] = [];
+  let index = 0;
+  let toErase = -1;
 
   for (const client of state.clients) {
     try {
       if (client.ip !== clientPlayer.ip) {
-        if (client.tcp_socket) {
-          await client.tcp_socket.write(packet);
-          clients.push(client);
-        }
+        await client.tcp_socket.write(packet);
       } else {
+        toErase = index;
         log.info(`Player ${clientPlayer.name} has disconnected! Reason: ${reason}`);
-        client.tcp_socket?.close();
+        client.tcp_socket.close();
       }
     } catch (err) {
       if (!(err instanceof Deno.errors.BadResource)) {
         log.error(err);
       }
     }
+
+    index += 1;
   }
 
-  state.clients = clients;
+  if (toErase !== -1) {
+    state.clients.splice(toErase, 1);
+  }
 };
 
 const handleMapChange = async (data: Uint8Array) => {
@@ -222,7 +222,7 @@ const handleMapChange = async (data: Uint8Array) => {
   for (const client of state.clients) {
     try {
       if (client.id !== id) {
-        await client.tcp_socket?.write(packet);
+        await client.tcp_socket.write(packet);
       } else {
         client.current_map = map_name;
         log.info(`${client.name} is now on ${client.current_map}`);
@@ -236,38 +236,41 @@ const handleMapChange = async (data: Uint8Array) => {
 };
 
 const PacketHandler = {
-  [Header.NONE]: async (_data: Uint8Array, _conn: Deno.Conn) => {
+  [Header.NONE]: () => {
     /* no-op */
   },
-  [Header.PING]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.PING]: async (data: Uint8Array) => {
     const { id } = PingPacket.unpack(data);
 
-    getClientById(id)?.tcp_socket?.write(
+    await getClientById(id)?.tcp_socket.write(
       PingEchoPacket.pack({
         header: Header.PING,
       }),
     );
   },
-  [Header.CONNECT]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.CONNECT]: () => {
     /* no-op */
   },
-  [Header.DISCONNECT]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.DISCONNECT]: async (data: Uint8Array) => {
     const { id } = DisconnectPacket.unpack(data);
 
     const client = getClientById(id);
     client && await disconnectPlayer(client, 'requested');
   },
-  [Header.STOP_SERVER]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.STOP_SERVER]: () => {
     /* very questionable */
   },
-  [Header.MAP_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.MAP_CHANGE]: async (data: Uint8Array) => {
     await handleMapChange(data);
   },
-  [Header.HEART_BEAT]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Heart_BeatPacket.unpack(data);
+  [Header.HEART_BEAT]: (data: Uint8Array) => {
+    const packet = HeartBeatPacket.unpack(data);
+    const client = getClientById(packet.id);
+    if (client?.heartbeat_token === packet.token) {
+      client.returned_heartbeat = true;
+    }
   },
-  [Header.MESSAGE]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.MESSAGE]: async (data: Uint8Array) => {
     const { id, message } = MessagePacket.unpack(data);
     const client = getClientById(id);
     if (client) {
@@ -282,20 +285,17 @@ const PacketHandler = {
       );
     }
   },
-  [Header.COUNTDOWN]: async (data: Uint8Array, conn: Deno.Conn) => {
-    const id = data[4]!;
-    const client = getClientById(id);
-    if (client) {
-      client.tcp_socket?.write(
-        ConfirmCountdownPacket.pack({
-          header: Header.COUNTDOWN,
-          id: 0,
-          step: 1,
-        }),
-      );
-    }
+  [Header.COUNTDOWN]: async (data: Uint8Array) => {
+    const id = data[1]!;
+    await getClientById(id)?.tcp_socket.write(
+      ConfirmCountdownPacket.pack({
+        header: Header.COUNTDOWN,
+        id: 0,
+        step: 1,
+      }),
+    );
   },
-  [Header.UPDATE]: (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.UPDATE]: (data: Uint8Array) => {
     const packet = UpdatePacket.unpack(data);
     const client = getClientById(packet.id);
     if (client) {
@@ -304,7 +304,7 @@ const PacketHandler = {
       client.data.data = packet.data.data;
     }
   },
-  [Header.SPEEDRUN_FINISH]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.SPEEDRUN_FINISH]: async (data: Uint8Array) => {
     const { id, time } = SpeedrunFinishPacket.unpack(data);
     await broadcast(SpeedrunFinishPacket.pack({
       header: Header.SPEEDRUN_FINISH,
@@ -312,7 +312,7 @@ const PacketHandler = {
       time,
     }));
   },
-  [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.MODEL_CHANGE]: async (data: Uint8Array) => {
     const packet = ModelChangePacket.unpack(data);
     const client = getClientById(packet.id);
     if (client) {
@@ -325,7 +325,7 @@ const PacketHandler = {
       }));
     }
   },
-  [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
+  [Header.COLOR_CHANGE]: async (data: Uint8Array) => {
     const packet = ColorChangePacket.unpack(data);
     const client = getClientById(packet.id);
     if (client) {
@@ -411,18 +411,82 @@ self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) =>
   }
 });
 
+const doHeartbeats = async () => {
+  for (const client of state.clients) {
+    if (!client.returned_heartbeat && client.missed_last_heartbeat) {
+      await disconnectPlayer(client, 'missed two heartbeats');
+      continue;
+    }
+
+    client.heartbeat_token = Math.floor(Math.random() * 2_147_483_647);
+    client.missed_last_heartbeat = !client.returned_heartbeat;
+    client.returned_heartbeat = false;
+
+    try {
+      await client.tcp_socket.write(
+        HeartBeatPacket.pack({
+          header: Header.HEART_BEAT,
+          id: client.id,
+          token: client.heartbeat_token,
+        }),
+      );
+    } catch (err) {
+      if (!(err instanceof Deno.errors.BadResource) && !(err instanceof Deno.errors.BrokenPipe)) {
+        log.error(err);
+      }
+      await disconnectPlayer(client, 'socket died');
+    }
+  }
+};
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const UPDATE_RATE_MS = 50;
+
+const BULK_UPDATE_RATE_MS = 50;
+const TCP_HEARTBEAT_RATE_MS = 5_000;
+const UDP_HEARTBEAT_RATE_MS = 1_000;
 
 const main = async () => {
   state.isRunning = true;
 
+  let lastTcpHeartbeat = 0;
+  let lastUdpHeartbeat = 0;
   let lastUpdate = 0;
 
   while (state.isRunning) {
     const now = performance.now();
 
-    if (now > (lastUpdate + UPDATE_RATE_MS)) {
+    if (now > (lastTcpHeartbeat + TCP_HEARTBEAT_RATE_MS)) {
+      await doHeartbeats();
+      lastTcpHeartbeat = now;
+    }
+
+    if (now > (lastUdpHeartbeat + UDP_HEARTBEAT_RATE_MS)) {
+      for (const client of state.clients) {
+        if (!client.tcp_only) {
+          try {
+            await udp.send(
+              HeartBeatPacket.pack({
+                header: Header.HEART_BEAT,
+                id: client.id,
+                token: client.heartbeat_token,
+              }),
+              {
+                transport: 'udp',
+                hostname: client.ip,
+                port: client.port,
+              },
+            );
+          } catch (err) {
+            if (!(err instanceof Deno.errors.BadResource)) {
+              log.error(err);
+            }
+          }
+        }
+      }
+      lastUdpHeartbeat = now;
+    }
+
+    if (now > (lastUpdate + BULK_UPDATE_RATE_MS)) {
       const count = state.clients.length;
       const data = state.clients.map(({ id, data }) => ({ id, data }));
 
@@ -439,5 +503,7 @@ const main = async () => {
     await sleep(10);
   }
 };
+
+log.info(`Server starting`);
 
 await Promise.all([main(), listenTcp(), listenUdp()]);

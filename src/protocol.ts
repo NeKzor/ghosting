@@ -70,7 +70,7 @@ export class IClient {
     public data: IDataGhost,
     public model_name: string,
     public current_map: string,
-    public tcp_socket: Deno.Conn | undefined,
+    public tcp_socket: Deno.Conn,
     public tcp_only: boolean,
     public color: IColor,
     public heartbeat_token: number,
@@ -187,6 +187,12 @@ export const MapChangePacket = struct({
   map_name: cstring,
   ticks: u32,
   ticks_total: u32,
+});
+
+export const HeartBeatPacket = struct({
+  header: u8,
+  id: u32,
+  token: u32,
 });
 
 export const MessagePacket = struct({

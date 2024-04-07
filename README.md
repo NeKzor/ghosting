@@ -11,6 +11,7 @@
   - [Disconnect](#connect)
   - [Ping](#ping)
   - [Map Change](#map_change)
+  - [Heart Beat](#heart-beat)
   - [Message](#message)
   - [Countdown](#countdown)
   - [Update](#update)
@@ -29,13 +30,13 @@
 
 ### TODO
 
-- [ ] Protocol
+- [x] Protocol
   - [x] Ping
   - [x] Connect
   - [x] Disconnect
   - [ ] Stop Server
   - [x] Map Change
-  - [ ] Heart Beat
+  - [x] Heart Beat
   - [x] Message
   - [x] Countdown
   - [x] Update
@@ -47,16 +48,16 @@
 - [ ] Testing
   - [ ] Client + GhostServer
   - [ ] Server + SourceAutoRecord
-- [ ] Resolve notes
+- [ ] Resolve points below
 
-### Notes
+### Notes/Nitpicks/Unresolved
 
-- No protocol version
 - ID is not a unique identifier
 - Header value gets ignored when starting a connection
 - Questionable `STOP_SERVER` implementation
 - Disconnect is checked by IP
 - Time in `SPEEDRUN_FINISH` is formatted and send as string
+- Heart Beat instead of Heartbeat
 
 ## Protocol
 
@@ -70,7 +71,7 @@
 | [DISCONNECT](#disconnect)           | 3     |
 | STOP_SERVER                         | 4     |
 | [MAP_CHANGE](#map-change)           | 5     |
-| HEART_BEAT                          | 6     |
+| [HEART_BEAT](#heart-beat)           | 6     |
 | [MESSAGE](#message)                 | 7     |
 | [COUNTDOWN](#countdown)             | 8     |
 | [UPDATE](#update)                   | 9     |
@@ -203,6 +204,68 @@ sequenceDiagram
 | map_name          | CString |              |
 | ticks             | u32     |              |
 | tick_total        | u32     |              |
+
+### Heart Beat
+
+#### TCP
+
+Two missed heartbeats will mark a client as disconnected.
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Server->>Clients: heart_beat_packet (broadcast)
+
+    Server->>Server: delay 5sec
+
+    Server->>Clients: heart_beat_packet (broadcast)
+
+    Client->>Server: heart_beat_packet
+
+    Server->>Client: heart_beat_packet
+
+    Server->>Server: delay 5sec
+
+    Server->>Client: heart_beat_packet
+
+    Server->>Server: delay 5sec
+
+    Server->>Clients: disconnect_packet (broadcast)
+```
+
+#### UPD
+
+Used to keep connection alive.
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Server->>Clients: heart_beat_packet (broadcast)
+
+    Server->>Server: delay 1sec
+
+    Server->>Clients: heart_beat_packet (broadcast)
+
+    Client->>Server: heart_beat_packet
+```
+
+#### heart_beat_packet
+
+| Field             | Type | Description    |
+| ----------------- | ---- | -------------- |
+| [header](#header) | u8   | `HEART_BEAT`   |
+| id                | u32  | Server sends 0 |
+| token             | u32  |                |
 
 ### Message
 
