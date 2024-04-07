@@ -20,6 +20,7 @@ import {
   MapChangePacket,
   MessagePacket,
   PingPacket,
+  SpeedrunFinishPacket,
 } from './protocol.ts';
 
 const {
@@ -267,9 +268,12 @@ const PacketHandler = {
     // TODO
     //const packet = UpdatePacket.unpack(data);
   },
-  [Header.SPEEDRUN_FINISH]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = SpeedrunFinishPacket.unpack(data);
+  [Header.SPEEDRUN_FINISH]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = SpeedrunFinishPacket.unpack(data);
+    const ghost = getGhostById(packet.id);
+    if (ghost) {
+      console.log(`${ghost.name} has finished on ${ghost.current_map} in ${packet.time}`);
+    }
   },
   [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
@@ -359,6 +363,15 @@ try {
           duration: 10,
           pre_commands: 'sv_cheats 1',
           post_commands: 'sv_cheats 0',
+        }),
+      );
+    },
+    speedrun_finish: async () => {
+      await tcp.write(
+        SpeedrunFinishPacket.pack({
+          header: Header.SPEEDRUN_FINISH,
+          id: state.id,
+          time: '12.34',
         }),
       );
     },

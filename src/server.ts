@@ -27,6 +27,7 @@ import {
   MessagePacket,
   PingEchoPacket,
   PingPacket,
+  SpeedrunFinishPacket,
 } from './protocol.ts';
 import { State } from './state.ts';
 
@@ -295,8 +296,12 @@ const PacketHandler = {
     //const packet = UpdatePacket.unpack(data);
   },
   [Header.SPEEDRUN_FINISH]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Speedrun_FinishPacket.unpack(data);
+    const { id, time } = SpeedrunFinishPacket.unpack(data);
+    await broadcast(SpeedrunFinishPacket.pack({
+      header: Header.SPEEDRUN_FINISH,
+      id,
+      time,
+    }));
   },
   [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO

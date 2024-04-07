@@ -204,3 +204,9 @@ export const ConfirmCountdownPacket = struct({
   id: u32,
   step: u8,
 });
+
+export const SpeedrunFinishPacket = struct({
+  header: u8,
+  id: u32,
+  time: cstring,
+});

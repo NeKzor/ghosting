@@ -23,6 +23,8 @@
   - [Countdown](#countdown)
     - [countdown_packet](#countdown_packet)
     - [confirm_countdown_packet](#confirm_countdown_packet)
+  - [Speedrun Finish](#speedrun-finish)
+    - [speedrun_finish_packet](#speedrun_finish_packet)
 - [Structs](#structs)
   - [GhostEntity](#ghostentity)
   - [Color](#color)
@@ -43,7 +45,7 @@
 - [x] Message
 - [x] Countdown
 - [ ] Update
-- [ ] Speedrun Finish
+- [x] Speedrun Finish
 - [ ] Model Change
 - [ ] Color Change
 
@@ -53,26 +55,27 @@
 - Header value gets ignored when starting a connection
 - Questionable `STOP_SERVER` implementation
 - Disconnect is checked by IP
+- Time in `SPEEDRUN_FINISH` is formatted and send as string
 
 ## Protocol
 
 ### Header
 
-| Name                      | Value |
-| ------------------------- | ----- |
-| NONE                      | 0     |
-| [PING](#ping)             | 1     |
-| [CONNECT](#connect)       | 2     |
-| [DISCONNECT](#disconnect) | 3     |
-| STOP_SERVER               | 4     |
-| [MAP_CHANGE](#map-change) | 5     |
-| HEART_BEAT                | 6     |
-| [MESSAGE](#message)       | 7     |
-| [COUNTDOWN](#countdown)   | 8     |
-| UPDATE                    | 9     |
-| SPEEDRUN_FINISH           | 10    |
-| MODEL_CHANGE              | 11    |
-| COLOR_CHANGE              | 12    |
+| Name                                | Value |
+| ----------------------------------- | ----- |
+| NONE                                | 0     |
+| [PING](#ping)                       | 1     |
+| [CONNECT](#connect)                 | 2     |
+| [DISCONNECT](#disconnect)           | 3     |
+| STOP_SERVER                         | 4     |
+| [MAP_CHANGE](#map-change)           | 5     |
+| HEART_BEAT                          | 6     |
+| [MESSAGE](#message)                 | 7     |
+| [COUNTDOWN](#countdown)             | 8     |
+| UPDATE                              | 9     |
+| [SPEEDRUN_FINISH](#speedrun-finish) | 10    |
+| MODEL_CHANGE                        | 11    |
+| COLOR_CHANGE                        | 12    |
 
 ### Connect
 
@@ -256,6 +259,27 @@ sequenceDiagram
 | [header](#header) | u8   | `COUNTDOWN`    |
 | id                | u32  | Server sends 0 |
 | step              | u32  | 1              |
+
+### Speedrun Finish
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+
+    Client->>Server: speedrun_finish_packet
+    Server->>Clients: speedrun_finish_packet (broadcast)
+```
+
+#### speedrun_finish_packet
+
+| Field             | Type    | Description       |
+| ----------------- | ------- | ----------------- |
+| [header](#header) | u8      | `SPEEDRUN_FINISH` |
+| id                | u32     |                   |
+| time              | cstring |                   |
 
 ## Structs
 
