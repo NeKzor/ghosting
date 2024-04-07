@@ -12,15 +12,18 @@ import {
   ConfirmCountdownPacket,
   ConnectionPacket,
   ConnectPacket,
+  COUNTDOWN_STEP_OFFSET,
   CountdownPacket,
   DisconnectPacket,
   Header,
+  HEADER_OFFSET,
   HeartBeatPacket,
   IDataGhost,
   IGhostEntity,
   MapChangePacket,
   MessagePacket,
   ModelChangePacket,
+  PACKET_BUFFER_SIZE,
   PingPacket,
   SpeedrunFinishPacket,
   UpdatePacket,
@@ -45,6 +48,7 @@ const state = {
   id: -1,
   pingClock: new Date(),
   ghostPool: [] as IGhostEntity[],
+  isConnected: false,
 };
 
 const tcp = await (async () => {
@@ -95,14 +99,14 @@ const connect = async () => {
       name,
       data: {
         position: {
-          x: 0,
-          y: 0,
-          z: 0,
+          x: 1,
+          y: 2,
+          z: 3,
         },
         view_angle: {
-          x: 0,
-          y: 0,
-          z: 0,
+          x: 4,
+          y: 5,
+          z: 6,
         },
         data: 0b0000_0000,
       },
@@ -114,7 +118,7 @@ const connect = async () => {
     }),
   );
 
-  const data = new Uint8Array(1024);
+  const data = new Uint8Array(PACKET_BUFFER_SIZE);
   if (!await tcp.read(data)) {
     return;
   }
@@ -157,9 +161,10 @@ const connect = async () => {
 };
 
 const listenTcp = async () => {
-  const data = new Uint8Array(1024);
+  const data = new Uint8Array(PACKET_BUFFER_SIZE);
   while (await tcp.read(data)) {
-    const header = data[0]!;
+    const header = data[HEADER_OFFSET]!;
+    //console.log({ data, header });
 
     if (header > Header.LAST) {
       console.error(`[tcp] Invalid header value ${header}`);
@@ -175,9 +180,10 @@ const listenTcp = async () => {
 };
 
 const listenUdp = async () => {
-  const data = new Uint8Array(1024);
+  const data = new Uint8Array(PACKET_BUFFER_SIZE);
   while (await udp.receive(data)) {
-    const header = data[0]!;
+    const header = data[HEADER_OFFSET]!;
+    console.log({ header });
 
     if (header > Header.LAST) {
       console.error(`[udp] Invalid header value ${header}`);
@@ -201,6 +207,32 @@ const sendPing = async () => {
       id: state.id,
     }),
   );
+};
+
+const sendPlayerData = async () => {
+  const packet = UpdatePacket.pack({
+    header: Header.UPDATE,
+    id: state.id,
+    data: {
+      position: {
+        x: Math.floor(Math.random() * 100),
+        y: Math.floor(Math.random() * 100),
+        z: Math.floor(Math.random() * 100),
+      },
+      view_angle: {
+        x: Math.floor(Math.random() * 90),
+        y: Math.floor(Math.random() * 90),
+        z: 0,
+      },
+      data: 0b1100_0000,
+    },
+  });
+
+  if (tcp_only) {
+    await tcp.write(packet);
+  } else {
+    await udp.send(packet, address);
+  }
 };
 
 const getGhostById = (id: number) => {
@@ -299,7 +331,7 @@ const PacketHandler = {
     }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, isUdp: boolean) => {
-    const step = data[5]!;
+    const step = data[COUNTDOWN_STEP_OFFSET]!;
     if (step === 0) {
       const { duration, pre_commands, post_commands } = CountdownPacket.unpack(data);
 
@@ -387,8 +419,35 @@ const disconnect = () => {
 
 Deno.addSignalListener('SIGINT', disconnect);
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const GHOST_UPDATE_RATE_MS = 50;
+
+const main = async () => {
+  state.isConnected = true;
+
+  let lastGhostUpdate = 0;
+
+  while (state.isConnected) {
+    const now = performance.now();
+
+    if (now > (lastGhostUpdate + GHOST_UPDATE_RATE_MS)) {
+      await sendPlayerData();
+      lastGhostUpdate = now;
+    }
+
+    await sleep(10);
+  }
+};
+
 try {
   await connect();
+
+  main().catch((err) => {
+    console.error(err);
+    disconnect();
+    Deno.exit(1);
+  });
 
   const commands = {
     exit: () => {
@@ -405,6 +464,14 @@ try {
       await tcp.write(
         DisconnectPacket.pack({
           header: Header.DISCONNECT,
+          id: state.id,
+        }),
+      );
+    },
+    stop_server: async () => {
+      await tcp.write(
+        DisconnectPacket.pack({
+          header: Header.STOP_SERVER,
           id: state.id,
         }),
       );
@@ -443,29 +510,7 @@ try {
       );
     },
     update: async () => {
-      const packet = UpdatePacket.pack({
-        header: Header.UPDATE,
-        id: state.id,
-        data: {
-          position: {
-            x: 123,
-            y: 456,
-            z: 789,
-          },
-          view_angle: {
-            x: 45,
-            y: 90,
-            z: 0,
-          },
-          data: 0b1100_0000,
-        },
-      });
-
-      if (tcp_only) {
-        await tcp.write(packet);
-      } else {
-        await udp.send(packet, address);
-      }
+      await sendPlayerData();
     },
     speedrun_finish: async () => {
       await tcp.write(

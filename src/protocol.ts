@@ -1,8 +1,8 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { bool, cstring, Struct, u32, u8 } from '@denosaurs/byte-type';
-import { PhantomData, struct, VariableArray } from './byte_types.ts';
+import { bool, f32be, Struct, u16be, u32be, u8 } from '@denosaurs/byte-type';
+import { PhantomData, sf_packet, std_string, VariableArray } from './byte_types.ts';
 
 export enum Header {
   NONE = 0,
@@ -106,15 +106,15 @@ export class IGhostEntity {
 }
 
 export const Vector = new Struct({
-  x: u32,
-  y: u32,
-  z: u32,
+  x: f32be,
+  y: f32be,
+  z: f32be,
 });
 
 export const Color = new Struct({
-  r: u32,
-  g: u32,
-  b: u32,
+  r: u8,
+  g: u8,
+  b: u8,
 });
 
 export const DataGhost = new Struct({
@@ -124,125 +124,132 @@ export const DataGhost = new Struct({
 });
 
 export const DataGhostUpdate = new Struct({
-  id: u32,
+  id: u32be,
   data: DataGhost,
 });
 
 export const GhostEntity = new Struct({
-  id: u32,
-  name: cstring,
+  id: u32be,
+  name: std_string,
   data: DataGhost,
-  model_name: cstring,
-  current_map: cstring,
+  model_name: std_string,
+  current_map: std_string,
   color: Color,
   spectator: bool,
 });
 
-export const ConnectionPacket = struct({
+export const PACKET_BUFFER_SIZE = 1_024;
+
+export const HEADER_OFFSET = 0x04;
+export const ID_OFFSET = 0x05;
+
+export const ConnectionPacket = sf_packet({
   header: u8,
-  port: u32,
-  name: cstring,
+  port: u16be,
+  name: std_string,
   data: DataGhost,
-  model_name: cstring,
-  current_map: cstring,
+  model_name: std_string,
+  current_map: std_string,
   tcp_only: bool,
   color: Color,
   spectator: bool,
 });
 
-export const ConfirmConnectionPacket = struct({
-  id: u32,
+export const ConfirmConnectionPacket = sf_packet({
+  id: u32be,
   nb_ghosts: new PhantomData(Number),
   ghosts: new VariableArray(GhostEntity),
 });
 
-export const ConnectPacket = struct({
+export const ConnectPacket = sf_packet({
   header: u8,
-  id: u32,
-  name: cstring,
+  id: u32be,
+  name: std_string,
   data: DataGhost,
-  model_name: cstring,
-  current_map: cstring,
+  model_name: std_string,
+  current_map: std_string,
   color: Color,
   spectator: bool,
 });
 
-export const PingPacket = struct({
+export const PingPacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
 });
 
-export const PingEchoPacket = struct({
+export const PingEchoPacket = sf_packet({
   header: u8,
 });
 
-export const DisconnectPacket = struct({
+export const DisconnectPacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
 });
 
-export const MapChangePacket = struct({
+export const MapChangePacket = sf_packet({
   header: u8,
-  id: u32,
-  map_name: cstring,
-  ticks: u32,
-  ticks_total: u32,
+  id: u32be,
+  map_name: std_string,
+  ticks: u32be,
+  ticks_total: u32be,
 });
 
-export const HeartBeatPacket = struct({
+export const HeartBeatPacket = sf_packet({
   header: u8,
-  id: u32,
-  token: u32,
+  id: u32be,
+  token: u32be,
 });
 
-export const MessagePacket = struct({
+export const MessagePacket = sf_packet({
   header: u8,
-  id: u32,
-  message: cstring,
+  id: u32be,
+  message: std_string,
 });
 
-export const CountdownPacket = struct({
+export const CountdownPacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
   step: u8,
-  duration: u32,
-  pre_commands: cstring,
-  post_commands: cstring,
+  duration: u32be,
+  pre_commands: std_string,
+  post_commands: std_string,
 });
 
-export const ConfirmCountdownPacket = struct({
+export const COUNTDOWN_STEP_OFFSET = HEADER_OFFSET + CountdownPacket.offsetOf('step');
+
+export const ConfirmCountdownPacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
   step: u8,
 });
 
-export const BulkUpdatePacket = struct({
+export const BulkUpdatePacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
   count: new PhantomData(Number),
   data: new VariableArray(DataGhostUpdate),
 });
 
-export const UpdatePacket = struct({
+export const UpdatePacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
   data: DataGhost,
 });
 
-export const SpeedrunFinishPacket = struct({
+export const SpeedrunFinishPacket = sf_packet({
   header: u8,
-  id: u32,
-  time: cstring,
+  id: u32be,
+  time: std_string,
 });
 
-export const ModelChangePacket = struct({
+export const ModelChangePacket = sf_packet({
   header: u8,
-  id: u32,
-  model_name: cstring,
+  id: u32be,
+  model_name: std_string,
 });
 
-export const ColorChangePacket = struct({
+export const ColorChangePacket = sf_packet({
   header: u8,
-  id: u32,
+  id: u32be,
   color: Color,
 });

@@ -6,6 +6,7 @@
 
 - [Status](#status)
 - [Protocol](#protocol)
+  - [Packets](#packets)
   - [Header](#header)
   - [Connect](#connect)
   - [Disconnect](#connect)
@@ -19,6 +20,7 @@
   - [Model Change](#model-change)
   - [Color Change](#color-change)
   - [Structs](#structs)
+    - [std::string](#stdstringstring)
     - [GhostEntity](#ghostentity)
     - [Color](#color)
     - [Vector](#vector)
@@ -34,7 +36,7 @@
   - [x] Ping
   - [x] Connect
   - [x] Disconnect
-  - [ ] Stop Server
+  - [-] Stop Server
   - [x] Map Change
   - [x] Heart Beat
   - [x] Message
@@ -46,7 +48,7 @@
 - [x] TCP/UDP mode
 - [ ] Implement all server commands
 - [ ] Testing
-  - [ ] Client + GhostServer
+  - [x] Client + GhostServer
   - [ ] Server + SourceAutoRecord
 - [ ] Resolve points below
 
@@ -60,6 +62,19 @@
 - Heart Beat instead of Heartbeat
 
 ## Protocol
+
+### Endianness
+
+SourceAutoRecord uses SFML which encodes primitive types like `u16`, `u32` and `f32` in big-endian (BE).
+
+### Packets
+
+Internal representation of `sf::Packet` from SFML. Every packet includes the total length of the data.
+
+| Field  | Type            | Description                       |
+| ------ | --------------- | --------------------------------- |
+| length | u32             | Length of `data` field.           |
+| data   | Header + Packet | Packet of type Connect, Ping etc. |
 
 ### Header
 
@@ -97,19 +112,21 @@ sequenceDiagram
 
 #### connection_packet
 
-| Field             | Type                    | Description |
-| ----------------- | ----------------------- | ----------- |
-| [header](#header) | u8                      | `CONNECT`   |
-| port              | u32                     |             |
-| name              | CString                 |             |
-| data              | [DataGhost](#dataghost) |             |
-| model_name        | CString                 |             |
-| level_name        | CString                 |             |
-| tcp_only          | bool                    |             |
-| color             | [Color](#color)         |             |
-| spectator         | bool                    |             |
+| Field             | Type                      | Description |
+| ----------------- | ------------------------- | ----------- |
+| [header](#header) | u8                        | `CONNECT`   |
+| port              | u16                       |             |
+| name              | [std::string](#stdstring) |             |
+| data              | [DataGhost](#dataghost)   |             |
+| model_name        | [std::string](#stdstring) |             |
+| level_name        | [std::string](#stdstring) |             |
+| tcp_only          | bool                      |             |
+| color             | [Color](#color)           |             |
+| spectator         | bool                      |             |
 
 #### confirm_connection_packet
+
+Note: This packet does not have a header. It is handled immediately after the connection_packet.
 
 | Field     | Type                           | Description |
 | --------- | ------------------------------ | ----------- |
@@ -119,17 +136,17 @@ sequenceDiagram
 
 #### connect_packet
 
-| Field             | Type                    | Description |
-| ----------------- | ----------------------- | ----------- |
-| [header](#header) | u8                      | `CONNECT`   |
-| id                | u32                     |             |
-| name              | CString                 |             |
-| data              | [DataGhost](#dataghost) |             |
-| model_name        | CString                 |             |
-| level_name        | CString                 |             |
-| tcp_only          | bool                    |             |
-| color             | [Color](#color)         |             |
-| spectator         | bool                    |             |
+| Field             | Type                      | Description |
+| ----------------- | ------------------------- | ----------- |
+| [header](#header) | u8                        | `CONNECT`   |
+| id                | u32                       |             |
+| name              | [std::string](#stdstring) |             |
+| data              | [DataGhost](#dataghost)   |             |
+| model_name        | [std::string](#stdstring) |             |
+| level_name        | [std::string](#stdstring) |             |
+| tcp_only          | bool                      |             |
+| color             | [Color](#color)           |             |
+| spectator         | bool                      |             |
 
 ### Disconnect
 
@@ -197,13 +214,13 @@ sequenceDiagram
 
 #### map_change_packet
 
-| Field             | Type    | Description  |
-| ----------------- | ------- | ------------ |
-| [header](#header) | u8      | `MAP_CHANGE` |
-| id                | u32     |              |
-| map_name          | CString |              |
-| ticks             | u32     |              |
-| tick_total        | u32     |              |
+| Field             | Type                      | Description  |
+| ----------------- | ------------------------- | ------------ |
+| [header](#header) | u8                        | `MAP_CHANGE` |
+| id                | u32                       |              |
+| map_name          | [std::string](#stdstring) |              |
+| ticks             | u32                       |              |
+| tick_total        | u32                       |              |
 
 ### Heart Beat
 
@@ -284,11 +301,11 @@ sequenceDiagram
 
 #### message_packet
 
-| Field             | Type    | Description |
-| ----------------- | ------- | ----------- |
-| [header](#header) | u8      | `MESSAGE`   |
-| id                | u32     |             |
-| message           | CString |             |
+| Field             | Type                      | Description |
+| ----------------- | ------------------------- | ----------- |
+| [header](#header) | u8                        | `MESSAGE`   |
+| id                | u32                       |             |
+| message           | [std::string](#stdstring) |             |
 
 ### Countdown
 
@@ -307,14 +324,14 @@ sequenceDiagram
 
 #### countdown_packet
 
-| Field             | Type    | Description |
-| ----------------- | ------- | ----------- |
-| [header](#header) | u8      | `COUNTDOWN` |
-| id                | u32     | 0           |
-| step              | u32     | 0           |
-| duration          | u32     |             |
-| pre_commands      | cstring |             |
-| post_commands     | cstring |             |
+| Field             | Type                      | Description |
+| ----------------- | ------------------------- | ----------- |
+| [header](#header) | u8                        | `COUNTDOWN` |
+| id                | u32                       | 0           |
+| step              | u32                       | 0           |
+| duration          | u32                       |             |
+| pre_commands      | [std::string](#stdstring) |             |
+| post_commands     | [std::string](#stdstring) |             |
 
 #### confirm_countdown_packet
 
@@ -379,11 +396,11 @@ sequenceDiagram
 
 #### speedrun_finish_packet
 
-| Field             | Type    | Description       |
-| ----------------- | ------- | ----------------- |
-| [header](#header) | u8      | `SPEEDRUN_FINISH` |
-| id                | u32     |                   |
-| time              | cstring |                   |
+| Field             | Type                      | Description       |
+| ----------------- | ------------------------- | ----------------- |
+| [header](#header) | u8                        | `SPEEDRUN_FINISH` |
+| id                | u32                       |                   |
+| time              | [std::string](#stdstring) |                   |
 
 ### Model Change
 
@@ -401,11 +418,11 @@ sequenceDiagram
 
 #### model_change_packet
 
-| Field             | Type    | Description    |
-| ----------------- | ------- | -------------- |
-| [header](#header) | u8      | `MODEL_CHANGE` |
-| id                | u32     |                |
-| model_name        | cstring |                |
+| Field             | Type                      | Description    |
+| ----------------- | ------------------------- | -------------- |
+| [header](#header) | u8                        | `MODEL_CHANGE` |
+| id                | u32                       |                |
+| model_name        | [std::string](#stdstring) |                |
 
 ### Color Change
 
@@ -431,25 +448,32 @@ sequenceDiagram
 
 ### Structs
 
+#### std::string
+
+| Field  | Type           | Description |
+| ------ | -------------- | ----------- |
+| length | u32            |             |
+| value  | char\[length\] |             |
+
 #### GhostEntity
 
-| Field       | Type                    | Description |
-| ----------- | ----------------------- | ----------- |
-| id          | u32                     |             |
-| name        | CString                 |             |
-| data        | [DataGhost](#dataghost) |             |
-| model_name  | CString                 |             |
-| current_map | CString                 |             |
-| color       | [Color](#color)         |             |
-| spectator   | bool                    |             |
+| Field       | Type                      | Description |
+| ----------- | ------------------------- | ----------- |
+| id          | u32                       |             |
+| name        | [std::string](#stdstring) |             |
+| data        | [DataGhost](#dataghost)   |             |
+| model_name  | [std::string](#stdstring) |             |
+| current_map | [std::string](#stdstring) |             |
+| color       | [Color](#color)           |             |
+| spectator   | bool                      |             |
 
 #### Color
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| r     | u32  |             |
-| g     | u32  |             |
-| b     | u32  |             |
+| r     | u8   |             |
+| g     | u8   |             |
+| b     | u8   |             |
 
 #### Vector
 

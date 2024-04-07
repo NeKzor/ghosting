@@ -6,9 +6,7 @@
 /// <reference lib="deno.unstable" />
 
 import { getConfig } from './config.ts';
-import { ServerEvent } from './events.ts';
-import { ServerEventType } from './events.ts';
-import { CommandEvent, EventType } from './events.ts';
+import { CommandEvent, EventType, ServerEvent, ServerEventType } from './events.ts';
 import { installLogger, log } from './logger.ts';
 import {
   BulkUpdatePacket,
@@ -20,13 +18,16 @@ import {
   CountdownPacket,
   DisconnectPacket,
   Header,
+  HEADER_OFFSET,
   HeartBeatPacket,
   IClient,
+  ID_OFFSET,
   IDataGhost,
   IGhostEntity,
   MapChangePacket,
   MessagePacket,
   ModelChangePacket,
+  PACKET_BUFFER_SIZE,
   PingEchoPacket,
   PingPacket,
   SpeedrunFinishPacket,
@@ -70,7 +71,7 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
 
     log.debug(`New TCP connection ${remote.hostname}:${remote.port}`);
 
-    const connection = new Uint8Array(1024);
+    const connection = new Uint8Array(PACKET_BUFFER_SIZE);
     await conn.read(connection);
 
     if (!await checkConnection(conn, connection)) {
@@ -78,15 +79,15 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
       return;
     }
 
-    const data = new Uint8Array(1024);
+    const data = new Uint8Array(PACKET_BUFFER_SIZE);
     while (await conn.read(data)) {
-      const header = data[0]!;
+      const header = data[HEADER_OFFSET]!;
 
       if (header > Header.LAST) {
         break;
       }
 
-      header !== Header.HEART_BEAT && log.debug(conn.remoteAddr, header);
+      header !== Header.HEART_BEAT && header !== Header.UPDATE && log.debug(conn.remoteAddr, header);
 
       const handler = PacketHandler[header as Header];
       await handler(data);
@@ -106,8 +107,8 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
 
 const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.Addr]) => {
   try {
-    const header = data[0]!;
-    const id = data[1]!;
+    const header = data[HEADER_OFFSET]!;
+    const id = data[ID_OFFSET]!;
 
     if (header > Header.LAST) {
       return;
@@ -318,7 +319,7 @@ const PacketHandler = {
     }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array) => {
-    const id = data[1]!;
+    const id = data[ID_OFFSET]!;
     await getClientById(id)?.tcp_socket.write(
       ConfirmCountdownPacket.pack({
         header: Header.COUNTDOWN,
