@@ -59,15 +59,17 @@ const listenTcp = async () => {
 };
 
 const listenUdp = async () => {
-  for await (const [_data, _address] of udp) {
-    // TODO
-    //handleUdpConnection(data, address).catch(log.error);
+  for await (const conn of udp) {
+    handleUdpConnection(conn).catch(log.error);
   }
 };
 
 const handleTcpConnection = async (conn: Deno.Conn) => {
   try {
-    log.info('NEW CONNECTION');
+    const remote = conn.remoteAddr as Deno.NetAddr;
+
+    log.debug(`New TCP connection ${remote.hostname}:${remote.port}`);
+
     const connection = new Uint8Array(1024);
     await conn.read(connection);
 
@@ -102,12 +104,42 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
   }
 };
 
+const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.Addr]) => {
+  try {
+    const header = data[0]!;
+    const id = data[1]!;
+
+    if (header > Header.LAST) {
+      return;
+    }
+
+    header !== Header.HEART_BEAT && log.debug(remoteAddr, header);
+
+    const client = getClientById(id);
+    if (client) {
+      const remote = remoteAddr as Deno.NetAddr;
+      client.port = remote.port;
+    }
+
+    const handler = PacketHandler[header as Header];
+    await handler(data);
+  } catch (err) {
+    if (
+      !(err instanceof Deno.errors.BrokenPipe) &&
+      !(err instanceof Deno.errors.BadResource) &&
+      !(err instanceof Deno.errors.Interrupted)
+    ) {
+      log.error(err);
+    }
+  }
+};
+
 const broadcast = async (packet: Uint8Array) => {
   for (const client of state.clients) {
     try {
       await client.tcp_socket.write(packet);
     } catch (err) {
-      if (!(err instanceof Deno.errors.BadResource)) {
+      if (!(err instanceof Deno.errors.BadResource) && !(err instanceof Deno.errors.BrokenPipe)) {
         log.error(err);
       }
     }
@@ -434,6 +466,7 @@ const doHeartbeats = async () => {
       if (!(err instanceof Deno.errors.BadResource) && !(err instanceof Deno.errors.BrokenPipe)) {
         log.error(err);
       }
+
       await disconnectPlayer(client, 'socket died');
     }
   }

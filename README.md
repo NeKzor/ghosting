@@ -43,7 +43,7 @@
   - [x] Speedrun Finish
   - [x] Model Change
   - [x] Color Change
-- [ ] TCP/UDP mode
+- [x] TCP/UDP mode
 - [ ] Implement all server commands
 - [ ] Testing
   - [ ] Client + GhostServer
@@ -261,11 +261,11 @@ sequenceDiagram
 
 #### heart_beat_packet
 
-| Field             | Type | Description    |
-| ----------------- | ---- | -------------- |
-| [header](#header) | u8   | `HEART_BEAT`   |
-| id                | u32  | Server sends 0 |
-| token             | u32  |                |
+| Field             | Type | Description     |
+| ----------------- | ---- | --------------- |
+| [header](#header) | u8   | `HEART_BEAT`    |
+| id                | u32  | Server sends 0  |
+| token             | u32  | UDP is always 0 |
 
 ### Message
 

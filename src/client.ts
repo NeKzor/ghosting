@@ -443,25 +443,29 @@ try {
       );
     },
     update: async () => {
-      await tcp.write(
-        UpdatePacket.pack({
-          header: Header.UPDATE,
-          id: state.id,
-          data: {
-            position: {
-              x: 123,
-              y: 456,
-              z: 789,
-            },
-            view_angle: {
-              x: 45,
-              y: 90,
-              z: 0,
-            },
-            data: 0b1100_0000,
+      const packet = UpdatePacket.pack({
+        header: Header.UPDATE,
+        id: state.id,
+        data: {
+          position: {
+            x: 123,
+            y: 456,
+            z: 789,
           },
-        }),
-      );
+          view_angle: {
+            x: 45,
+            y: 90,
+            z: 0,
+          },
+          data: 0b1100_0000,
+        },
+      });
+
+      if (tcp_only) {
+        await tcp.write(packet);
+      } else {
+        await udp.send(packet, address);
+      }
     },
     speedrun_finish: async () => {
       await tcp.write(
