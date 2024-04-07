@@ -25,6 +25,7 @@ import {
   IGhostEntity,
   MapChangePacket,
   MessagePacket,
+  ModelChangePacket,
   PingEchoPacket,
   PingPacket,
   SpeedrunFinishPacket,
@@ -304,8 +305,17 @@ const PacketHandler = {
     }));
   },
   [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Model_ChangePacket.unpack(data);
+    const packet = ModelChangePacket.unpack(data);
+    const client = getClientById(packet.id);
+    if (client) {
+      client.model_name = packet.model_name;
+
+      await broadcast(ModelChangePacket.pack({
+        header: Header.MODEL_CHANGE,
+        id: client.id,
+        model_name: client.model_name,
+      }));
+    }
   },
   [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO

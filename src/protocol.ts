@@ -210,3 +210,9 @@ export const SpeedrunFinishPacket = struct({
   id: u32,
   time: cstring,
 });
+
+export const ModelChangePacket = struct({
+  header: u8,
+  id: u32,
+  model_name: cstring,
+});

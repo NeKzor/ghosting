@@ -19,6 +19,7 @@ import {
   IGhostEntity,
   MapChangePacket,
   MessagePacket,
+  ModelChangePacket,
   PingPacket,
   SpeedrunFinishPacket,
 } from './protocol.ts';
@@ -275,9 +276,14 @@ const PacketHandler = {
       console.log(`${ghost.name} has finished on ${ghost.current_map} in ${packet.time}`);
     }
   },
-  [Header.MODEL_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = ModelChangePacket.unpack(data);
+  [Header.MODEL_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = ModelChangePacket.unpack(data);
+    const ghost = getGhostById(packet.id);
+    if (ghost) {
+      const oldModel = ghost.model_name;
+      ghost.model_name = packet.model_name;
+      console.log(`${ghost.name} changed model from ${oldModel} to ${ghost.model_name}`);
+    }
   },
   [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
     // TODO
@@ -372,6 +378,15 @@ try {
           header: Header.SPEEDRUN_FINISH,
           id: state.id,
           time: '12.34',
+        }),
+      );
+    },
+    model_change: async () => {
+      await tcp.write(
+        ModelChangePacket.pack({
+          header: Header.MODEL_CHANGE,
+          id: state.id,
+          model_name: 'models/props/test.mdl',
         }),
       );
     },

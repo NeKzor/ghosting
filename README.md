@@ -25,6 +25,8 @@
     - [confirm_countdown_packet](#confirm_countdown_packet)
   - [Speedrun Finish](#speedrun-finish)
     - [speedrun_finish_packet](#speedrun_finish_packet)
+  - [Model Change](#model-change)
+    - [model_change_packet](#model_change_packet)
 - [Structs](#structs)
   - [GhostEntity](#ghostentity)
   - [Color](#color)
@@ -46,7 +48,7 @@
 - [x] Countdown
 - [ ] Update
 - [x] Speedrun Finish
-- [ ] Model Change
+- [x] Model Change
 - [ ] Color Change
 
 ### Notes
@@ -74,7 +76,7 @@
 | [COUNTDOWN](#countdown)             | 8     |
 | UPDATE                              | 9     |
 | [SPEEDRUN_FINISH](#speedrun-finish) | 10    |
-| MODEL_CHANGE                        | 11    |
+| [MODEL_CHANGE](#model-change)       | 11    |
 | COLOR_CHANGE                        | 12    |
 
 ### Connect
@@ -268,6 +270,7 @@ sequenceDiagram
     Note left of Server: ghost.portal2.sr
     participant Client
     Note right of Client: SourceAutoRecord
+  participant Clients
 
     Client->>Server: speedrun_finish_packet
     Server->>Clients: speedrun_finish_packet (broadcast)
@@ -280,6 +283,28 @@ sequenceDiagram
 | [header](#header) | u8      | `SPEEDRUN_FINISH` |
 | id                | u32     |                   |
 | time              | cstring |                   |
+
+### Model Change
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Client->>Server: model_change_packet
+    Server->>Clients: model_change_packet (broadcast)
+```
+
+#### model_change_packet
+
+| Field             | Type    | Description    |
+| ----------------- | ------- | -------------- |
+| [header](#header) | u8      | `MODEL_CHANGE` |
+| id                | u32     |                |
+| model_name        | cstring |                |
 
 ## Structs
 
