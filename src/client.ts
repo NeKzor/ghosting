@@ -8,6 +8,7 @@ import { Input } from 'cliffy/prompt/input.ts';
 import { Select } from 'cliffy/prompt/select.ts';
 import { getConfig } from './config.ts';
 import {
+  ColorChangePacket,
   ConfirmConnectionPacket,
   ConfirmCountdownPacket,
   ConnectionPacket,
@@ -285,9 +286,14 @@ const PacketHandler = {
       console.log(`${ghost.name} changed model from ${oldModel} to ${ghost.model_name}`);
     }
   },
-  [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = ColorChangePacket.unpack(data);
+  [Header.COLOR_CHANGE]: (data: Uint8Array, conn: Deno.Conn) => {
+    const packet = ColorChangePacket.unpack(data);
+    const ghost = getGhostById(packet.id);
+    if (ghost) {
+      const oldColor = ghost.color;
+      ghost.color = packet.color;
+      console.log(`${ghost.name} changed color from ${Deno.inspect(oldColor)} to ${Deno.inspect(ghost.color)}`);
+    }
   },
 };
 
@@ -387,6 +393,19 @@ try {
           header: Header.MODEL_CHANGE,
           id: state.id,
           model_name: 'models/props/test.mdl',
+        }),
+      );
+    },
+    color_change: async () => {
+      await tcp.write(
+        ColorChangePacket.pack({
+          header: Header.COLOR_CHANGE,
+          id: state.id,
+          color: {
+            r: 123,
+            g: 132,
+            b: 231,
+          },
         }),
       );
     },

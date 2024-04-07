@@ -27,6 +27,8 @@
     - [speedrun_finish_packet](#speedrun_finish_packet)
   - [Model Change](#model-change)
     - [model_change_packet](#model_change_packet)
+  - [Color Change](#color-change)
+    - [color_change_packet](#color_change_packet)
 - [Structs](#structs)
   - [GhostEntity](#ghostentity)
   - [Color](#color)
@@ -49,7 +51,7 @@
 - [ ] Update
 - [x] Speedrun Finish
 - [x] Model Change
-- [ ] Color Change
+- [x] Color Change
 
 ### Notes
 
@@ -77,7 +79,7 @@
 | UPDATE                              | 9     |
 | [SPEEDRUN_FINISH](#speedrun-finish) | 10    |
 | [MODEL_CHANGE](#model-change)       | 11    |
-| COLOR_CHANGE                        | 12    |
+| [COLOR_CHANGE](#color-change)       | 12    |
 
 ### Connect
 
@@ -305,6 +307,28 @@ sequenceDiagram
 | [header](#header) | u8      | `MODEL_CHANGE` |
 | id                | u32     |                |
 | model_name        | cstring |                |
+
+### Color Change
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    participant Client
+    Note right of Client: SourceAutoRecord
+    participant Clients
+
+    Client->>Server: color_change_packet
+    Server->>Clients: color_change_packet (broadcast)
+```
+
+#### color_change_packet
+
+| Field             | Type            | Description    |
+| ----------------- | --------------- | -------------- |
+| [header](#header) | u8              | `COLOR_CHANGE` |
+| id                | u32             |                |
+| color             | [Color](#color) |                |
 
 ## Structs
 

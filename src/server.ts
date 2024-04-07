@@ -13,6 +13,7 @@ import { ServerEventType } from './events.ts';
 import { CommandEvent, EventType } from './events.ts';
 import { installLogger, log } from './logger.ts';
 import {
+  ColorChangePacket,
   ConfirmConnectionPacket,
   ConfirmCountdownPacket,
   ConnectionPacket,
@@ -318,8 +319,17 @@ const PacketHandler = {
     }
   },
   [Header.COLOR_CHANGE]: async (data: Uint8Array, conn: Deno.Conn) => {
-    // TODO
-    //const packet = Color_ChangePacket.unpack(data);
+    const packet = ColorChangePacket.unpack(data);
+    const client = getClientById(packet.id);
+    if (client) {
+      client.color = packet.color;
+
+      await broadcast(ColorChangePacket.pack({
+        header: Header.COLOR_CHANGE,
+        id: client.id,
+        color: client.color,
+      }));
+    }
   },
 };
 

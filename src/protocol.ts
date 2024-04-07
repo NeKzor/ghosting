@@ -216,3 +216,9 @@ export const ModelChangePacket = struct({
   id: u32,
   model_name: cstring,
 });
+
+export const ColorChangePacket = struct({
+  header: u8,
+  id: u32,
+  color: Color,
+});
