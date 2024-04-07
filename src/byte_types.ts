@@ -96,27 +96,27 @@ export const struct = <
   return {
     pack: (value: V) => {
       const buffer = new ArrayBuffer(size);
-      input.write(value, new DataView(buffer));
+      input.writePacked(value, new DataView(buffer));
       return new Uint8Array(buffer);
     },
     packWithSize: (value: V) => {
       const buffer = new ArrayBuffer(size);
       const options = { byteOffset: 0 };
-      input.write(value, new DataView(buffer), options);
+      input.writePacked(value, new DataView(buffer), options);
       return [new Uint8Array(buffer), options.byteOffset];
     },
     packResized: (value: V) => {
       const buffer = new ArrayBuffer(size);
       const options = { byteOffset: 0 };
-      input.write(value, new DataView(buffer), options);
+      input.writePacked(value, new DataView(buffer), options);
       return new Uint8Array(buffer).slice(0, options.byteOffset);
     },
     unpack: (data: Uint8Array) => {
-      return input.read(new DataView(data.buffer));
+      return input.readPacked(new DataView(data.buffer));
     },
     unpackWithSized: (data: Uint8Array) => {
       const options = { byteOffset: 0 };
-      const value = input.read(new DataView(data.buffer));
+      const value = input.readPacked(new DataView(data.buffer));
       return [value, options.byteOffset];
     },
   };
