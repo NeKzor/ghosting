@@ -1,9 +1,8 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { tty } from 'cliffy/ansi/tty.ts';
-import { Input } from 'cliffy/prompt/input.ts';
-import { Select } from 'cliffy/prompt/select.ts';
+import { tty } from '@cliffy/ansi';
+import { Input, Select } from '@cliffy/prompt';
 import { getConfig } from './config.ts';
 import {
   BulkUpdatePacket,

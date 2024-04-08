@@ -1,11 +1,8 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { tty } from 'cliffy/ansi/tty.ts';
-import { Input } from 'cliffy/prompt/input.ts';
-import { Select } from 'cliffy/prompt/select.ts';
-import { Number as NumberInput } from 'cliffy/prompt/number.ts';
-import { Confirm } from 'cliffy/prompt/confirm.ts';
+import { tty } from '@cliffy/ansi';
+import { Confirm, Input, Number as NumberInput, Select } from '@cliffy/prompt';
 import { CommandEvent, EventType, ServerEvent, ServerEventType } from './events.ts';
 
 const server = new Worker(import.meta.resolve('./server.ts'), { type: 'module' });
