@@ -12,19 +12,8 @@
 - [Protocol](#protocol)
   - [Packets](#packets)
   - [Header](#header)
-  - [Connect](#connect)
-  - [Disconnect](#connect)
-  - [Ping](#ping)
-  - [Map Change](#map_change)
-  - [Heart Beat](#heart-beat)
-  - [Message](#message)
-  - [Countdown](#countdown)
-  - [Update](#update)
-  - [Speedrun Finish](#speedrun-finish)
-  - [Model Change](#model-change)
-  - [Color Change](#color-change)
   - [Structs](#structs)
-    - [std::string](#stdstringstring)
+    - [std::string](#stdstring)
     - [GhostEntity](#ghostentity)
     - [Color](#color)
     - [Vector](#vector)
@@ -114,6 +103,11 @@ level = "debug" # debug, info, warn, error, critical
 console = true # might want to turn it of in CLI mode
 file = true
 filename = "logs/server.log"
+
+[countdown]
+delay = 0
+pre_commands = ""
+post_commands = ""
 ```
 
 ## Protocol

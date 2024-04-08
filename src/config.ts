@@ -18,6 +18,11 @@ export const getConfig = async () => {
       file: boolean;
       filename: string;
     };
+    countdown: {
+      delay: number;
+      pre_commands: string;
+      post_commands: string;
+    };
     client: {
       name: string;
       model_name: string;

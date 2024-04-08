@@ -37,13 +37,16 @@ import {
 } from './protocol.ts';
 import { State } from './state.ts';
 
-const { server: { hostname, port }, logging } = await getConfig();
+const { server: { hostname, port }, logging, countdown } = await getConfig();
 
 if (!installLogger(logging)) {
   Deno.exit(1);
 }
 
 const state = new State();
+state.countdown.duration = countdown.delay;
+state.countdown.preCommands = countdown.pre_commands;
+state.countdown.postCommands = countdown.post_commands;
 
 const tcp = Deno.listen({
   hostname,
@@ -410,7 +413,7 @@ self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) =>
       break;
     }
     case EventType.Disconnect: {
-      //
+      // TODO
       break;
     }
     case EventType.DisconnectId: {

@@ -8,6 +8,11 @@ console = true # might want to turn it of in CLI mode
 file = true
 filename = "logs/server.log"
 
+[countdown]
+delay = 0
+pre_commands = ""
+post_commands = ""
+
 # for local tests
 [client]
 name = "NeKz"
