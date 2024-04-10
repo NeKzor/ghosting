@@ -65,7 +65,7 @@
   - [ ] Docker image
   - [ ] Server
 
-### Protocol notes, nitpicks and unresolved questions
+### Discoveries
 
 - ID is not a unique identifier
 - `STOP_SERVER` packet is a kill switch
@@ -114,7 +114,7 @@ post_commands = ""
 
 ### Endianness
 
-SourceAutoRecord uses [SFML][sfml] which encodes primitive types like `u16`, `u32` and `f32` in big-endian (BE).
+SourceAutoRecord uses [SFML][sfml] which encodes integer types like `u16`, `u32`, `u64` in big-endian (BE).
 
 [sfml]: https://www.sfml-dev.org
 

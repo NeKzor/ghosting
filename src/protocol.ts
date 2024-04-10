@@ -1,7 +1,7 @@
 // Copyright (c) 2024, NeKz
 // SPDX-License-Identifier: MIT
 
-import { bool, f32be, Struct, u16be, u32be, u8 } from '@denosaurs/byte-type';
+import { bool, f32le, Struct, u16be, u32be, u8 } from '@denosaurs/byte-type';
 import { PhantomData, sf_packet, std_string, VariableArray } from './byte_types.ts';
 
 export enum Header {
@@ -106,9 +106,9 @@ export class IGhostEntity {
 }
 
 export const Vector = new Struct({
-  x: f32be,
-  y: f32be,
-  z: f32be,
+  x: f32le,
+  y: f32le,
+  z: f32le,
 });
 
 export const Color = new Struct({
