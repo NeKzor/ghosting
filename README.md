@@ -5,10 +5,11 @@
 [p2sr-GhostServer]: https://github.com/p2sr/GhostServer
 
 - [Status](#status)
-- [Setup](#setup)
+- [Development](#development)
   - [Requirements](#requirements)
   - [Tasks](#tasks)
   - [Config](#config)
+- [Production](#production)
 - [Protocol](#protocol)
   - [Packets](#packets)
   - [Header](#header)
@@ -75,7 +76,15 @@
 - Header value gets ignored when starting a connection
 - "Heart Beat" should be called "Heartbeat"
 
-## Setup
+### Wishlist
+
+- Secure protocol
+- Authentication
+- Admin role
+- Server plugins
+- UI
+
+## Development
 
 ### Requirements
 
@@ -89,6 +98,7 @@ Start any task with `deno task <name>`.
 | -------- | ----------------------------- |
 | `start`  | Start the server in CLI mode. |
 | `server` | Start the server.             |
+| `client` | Start a test client.          |
 
 ### Config
 
@@ -109,6 +119,30 @@ filename = "logs/server.log"
 delay = 0
 pre_commands = ""
 post_commands = ""
+```
+
+## Production
+
+It's recommended to use [Docker Engine](https://docs.docker.com/engine/install). The latest server image is on
+[Docker Hub](https://hub.docker.com/r/p2sr/ghosting/tags).
+
+- Create [config.toml](#config)
+- Create `log` folder
+- Create `docker-compose.yml` (see below)
+- Run `docker compose up -d`
+
+```yml
+version: "3.8"
+services:
+  server:
+    image: p2sr/ghosting:latest
+    container_name: "ghosting"
+    restart: always
+    ports:
+      - "127.0.0.1:53000:53000"
+    volumes:
+      - ./logs:/logs:rw
+      - ./config.toml:/config.toml:rw
 ```
 
 ## Protocol
