@@ -7,7 +7,7 @@
 - [Status](#status)
 - [Development](#development)
   - [Requirements](#requirements)
-  - [Tasks](#tasks)
+  - [Steps](#steps)
   - [Config](#config)
 - [Production](#production)
 - [Protocol](#protocol)
@@ -92,15 +92,11 @@
 
 - [Deno runtime](https://deno.com)
 
-### Tasks
+### Steps
 
-Start any task with `deno task <name>`.
-
-| Task     | Description                   |
-| -------- | ----------------------------- |
-| `start`  | Start the server in CLI mode. |
-| `server` | Start the server.             |
-| `client` | Start a test client.          |
+- Start the server with CLI: `deno task start`
+- Start the server only: `deno task server`
+- Connect to the server: `deno task client --name Player`
 
 ### Config
 

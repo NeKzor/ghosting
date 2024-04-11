@@ -4,11 +4,15 @@
     "specifiers": {
       "jsr:@cliffy/ansi@1.0.0-rc.4": "jsr:@cliffy/ansi@1.0.0-rc.4",
       "jsr:@cliffy/ansi@^1.0.0-rc.4": "jsr:@cliffy/ansi@1.0.0-rc.4",
+      "jsr:@cliffy/command@^1.0.0-rc.4": "jsr:@cliffy/command@1.0.0-rc.4",
+      "jsr:@cliffy/flags@1.0.0-rc.4": "jsr:@cliffy/flags@1.0.0-rc.4",
       "jsr:@cliffy/keycode@1.0.0-rc.4": "jsr:@cliffy/keycode@1.0.0-rc.4",
       "jsr:@cliffy/prompt@^1.0.0-rc.4": "jsr:@cliffy/prompt@1.0.0-rc.4",
+      "jsr:@cliffy/table@1.0.0-rc.4": "jsr:@cliffy/table@1.0.0-rc.4",
       "jsr:@denosaurs/byte-type@^0.4.0": "jsr:@denosaurs/byte-type@0.4.0",
       "jsr:@std/assert@^0.221.0": "jsr:@std/assert@0.221.0",
       "jsr:@std/collections@^0.221.0": "jsr:@std/collections@0.221.0",
+      "jsr:@std/console@0.221": "jsr:@std/console@0.221.0",
       "jsr:@std/encoding@0.221": "jsr:@std/encoding@0.221.0",
       "jsr:@std/fmt@0.221": "jsr:@std/fmt@0.221.0",
       "jsr:@std/fmt@^0.221.0": "jsr:@std/fmt@0.221.0",
@@ -30,6 +34,18 @@
           "jsr:@std/io@0.221"
         ]
       },
+      "@cliffy/command@1.0.0-rc.4": {
+        "integrity": "709884ffe0f53ce3edafa92b58223634397878fbf6dcabe0c74ea0108273b9f7",
+        "dependencies": [
+          "jsr:@cliffy/flags@1.0.0-rc.4",
+          "jsr:@cliffy/table@1.0.0-rc.4",
+          "jsr:@std/fmt@0.221",
+          "jsr:@std/text@0.221"
+        ]
+      },
+      "@cliffy/flags@1.0.0-rc.4": {
+        "integrity": "29f370ade4ddf6e150a4d25fc44661234c19870ffcf7fb07cd100f1843fcd6e1"
+      },
       "@cliffy/keycode@1.0.0-rc.4": {
         "integrity": "872ee86f6a438dc2c532408e542ee97ed19c91aedb8374c2eddc6e02e83c8ce4"
       },
@@ -44,6 +60,12 @@
           "jsr:@std/text@0.221"
         ]
       },
+      "@cliffy/table@1.0.0-rc.4": {
+        "integrity": "990e4e0b3910e6c9cf7a5b4318b8f5e121cf681494c94fd113febb9b4d4c0741",
+        "dependencies": [
+          "jsr:@std/console@0.221"
+        ]
+      },
       "@denosaurs/byte-type@0.4.0": {
         "integrity": "9d6816f4bc3f2dec579007fdaf16688cfa8f070e69f12542997d07c877a1e5c7"
       },
@@ -55,6 +77,9 @@
       },
       "@std/collections@0.221.0": {
         "integrity": "789a365bb79b06c4da79d2b93fe32ddfe03b93ab083e72c1de96303d12f84be5"
+      },
+      "@std/console@0.221.0": {
+        "integrity": "8f2afc1f3f14f5d6039c0c767f057e4aa1897d2210e167c4667cb155cafb9d11"
       },
       "@std/encoding@0.221.0": {
         "integrity": "d1dd76ef0dc5d14088411e6dc1dede53bf8308c95d1537df1214c97137208e45"
@@ -83,7 +108,10 @@
         ]
       },
       "@std/text@0.221.0": {
-        "integrity": "a2f89ceb0d8851cd33e6774064621a1da9fbc36578cf4f02c5b5bcd7e8c84b67"
+        "integrity": "a2f89ceb0d8851cd33e6774064621a1da9fbc36578cf4f02c5b5bcd7e8c84b67",
+        "dependencies": [
+          "jsr:@std/assert@^0.221.0"
+        ]
       },
       "@std/toml@0.221.0": {
         "integrity": "d64a00b57627b22eff56346d5fca6a23dd969e8df8671b760be954177a24ea84",
@@ -97,6 +125,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@cliffy/ansi@^1.0.0-rc.4",
+      "jsr:@cliffy/command@^1.0.0-rc.4",
       "jsr:@cliffy/prompt@^1.0.0-rc.4",
       "jsr:@denosaurs/byte-type@^0.4.0",
       "jsr:@std/assert@^0.221.0",

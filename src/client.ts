@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 import { tty } from '@cliffy/ansi';
+import { ArgumentValue, Command, Type, ValidationError } from '@cliffy/command';
 import { Input } from '@cliffy/prompt';
-import { getConfig } from './config.ts';
 import {
   BulkUpdatePacket,
   ColorChangePacket,
@@ -16,6 +16,7 @@ import {
   DisconnectPacket,
   Header,
   HeartBeatPacket,
+  IColor,
   IDataGhost,
   IGhostEntity,
   MapChangePacket,
@@ -29,20 +30,62 @@ import {
   UpdatePacket,
 } from './protocol.ts';
 
+const { options } = await new Command()
+  .name('ghosting_client')
+  .version('0.1.0')
+  .description('Client tool for testing ghosting server.')
+  .type(
+    'color',
+    new class extends Type<IColor> {
+      public parse({ label, name, value }: ArgumentValue): IColor {
+        const color = value.split(',').map((num) => Number(num));
+        if (color.length !== 3 || color.some((num) => isNaN(num) || num < 0 || num > 255)) {
+          throw new ValidationError(`${label} "${name}" must be a valid color. Use: r,g,b`);
+        }
+
+        const [r, g, b] = color as [number, number, number];
+        return new IColor(r, g, b);
+      }
+    }(),
+  )
+  .globalOption('-a, --address <address:string>', 'The address or the name of the host to connect to.', {
+    required: true,
+  })
+  .globalOption('-p, --port <port:number>', 'The port of the host to connect to.', {
+    required: true,
+  })
+  .globalOption('-n, --name <name:string>', 'Set the name of the client.', {
+    required: true,
+  })
+  .globalOption('-M, --model-name <model_name:string>', 'Set the model name of the client.', {
+    default: 'models/props/food_can/food_can_open.mdl',
+  })
+  .globalOption('-m, --map <map:string>', 'Set the current map of the client.', {
+    default: 'sp_a1_intro1',
+  })
+  .globalOption('-t, --tcp-only', 'Set TCP mode of the client.', {
+    default: false,
+  })
+  .globalOption('-c, --color <color:color>', 'Set the color of the client.', {
+    default: new IColor(0, 0, 0),
+  })
+  .globalOption('-s, --spectator', 'Set client as spectator.', {
+    default: false,
+  })
+  .parse(Deno.args);
+
 const {
-  server: {
-    hostname,
-    port,
-  },
-  client: {
-    name,
-    model_name,
-    current_map,
-    tcp_only,
-    color,
-    spectator,
-  },
-} = await getConfig();
+  address: hostname,
+  port,
+  name,
+  modelName: model_name,
+  map: current_map,
+  tcpOnly: tcp_only,
+  color,
+  spectator,
+} = options;
+
+console.log(options);
 
 const state = {
   id: -1,
@@ -145,7 +188,7 @@ const connect = async () => {
     );
   }
 
-  console.log('Connected', tcp.localAddr, tcp.remoteAddr, udp.addr);
+  console.log('Connected');
 
   listenTcp().catch((err) => {
     console.error(err);
