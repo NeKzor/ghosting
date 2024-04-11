@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import { tty } from '@cliffy/ansi';
-import { Input, Select } from '@cliffy/prompt';
+import { Input } from '@cliffy/prompt';
 import { getConfig } from './config.ts';
 import {
   BulkUpdatePacket,
@@ -474,6 +474,9 @@ try {
       disconnect();
       Deno.exit(0);
     },
+    commands: () => {
+      Object.keys(commands).forEach((command) => console.log(command));
+    },
     state: () => {
       console.dir(state);
     },
@@ -568,12 +571,18 @@ try {
   const commandPrompt = {
     message: 'Command:',
     search: true,
-    options: Object.keys(commands).map((value) => ({ name: value, value })),
+    suggestions: Object.keys(commands),
   };
 
   while (true) {
-    const command = await Select.prompt(commandPrompt) as unknown as keyof typeof commands;
+    const command = await Input.prompt(commandPrompt) as unknown as keyof typeof commands;
+
     const handler = commands[command];
+    if (!handler) {
+      console.log('Unknown command');
+      continue;
+    }
+
     await handler();
   }
 } catch (err) {

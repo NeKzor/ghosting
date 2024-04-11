@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import { tty } from '@cliffy/ansi';
-import { Confirm, Input, Number as NumberInput, Select } from '@cliffy/prompt';
+import { Confirm, Input, Number as NumberInput } from '@cliffy/prompt';
 import { CommandEvent, EventType, ServerEvent, ServerEventType } from './events.ts';
 
 const server = new Worker(import.meta.resolve('./server.ts'), { type: 'module' });
@@ -164,11 +164,17 @@ Deno.addSignalListener('SIGINT', () => {
 
 const commandPrompt = {
   message: 'Command:',
-  options: Object.keys(commands).map((value) => ({ name: value, value })),
+  suggestions: Object.keys(commands),
 };
 
 while (true) {
-  const command = await Select.prompt(commandPrompt) as unknown as keyof typeof commands;
+  const command = await Input.prompt(commandPrompt) as unknown as keyof typeof commands;
+
   const handler = commands[command];
+  if (!handler) {
+    console.log('Unknown command');
+    continue;
+  }
+
   await handler.fn();
 }
