@@ -40,21 +40,21 @@
   - [x] Model Change
   - [x] Color Change
 - [x] TCP/UDP mode
-- [ ] Implement old server commands
+- [x] Implement old server commands
   - [x] exit
-  - [ ] help
+  - [x] help
   - [x] list
   - [x] countdown_set
   - [x] countdown
-  - [ ] disconnect
-  - [ ] disconnect_id
-  - [ ] ban
-  - [ ] ban_id
+  - [x] disconnect
+  - [x] disconnect_id
+  - [x] ban
+  - [x] ban_id
   - [x] accept_players
   - [x] refuse_players
   - [x] accept_spectators
   - [x] refuse_spectators
-  - [ ] server_msg
+  - [x] server_msg
 - [ ] Add useful client commands
   - [ ] Smoke test
   - [ ] Fuzzing test
@@ -75,6 +75,7 @@
 - Disconnect is checked by IP
 - Header value gets ignored when starting a connection
 - "Heart Beat" should be called "Heartbeat"
+- `CMD_SERVER_MSG` (CLI) does not schedule on server thread
 
 ### Wishlist
 
@@ -127,7 +128,7 @@ It's recommended to use [Docker Engine](https://docs.docker.com/engine/install).
 [Docker Hub](https://hub.docker.com/r/p2sr/ghosting/tags).
 
 - Create [config.toml](#config)
-- Create `log` folder
+- Create `logs` folder
 - Create `docker-compose.yml` (see below)
 - Run `docker compose up -d`
 
@@ -378,6 +379,8 @@ sequenceDiagram
 
 ### Message
 
+#### Client Message
+
 ```mermaid
 sequenceDiagram
     participant Server
@@ -391,13 +394,25 @@ sequenceDiagram
     Server->>Clients: message_packet (broadcast)
 ```
 
+#### Server Message
+
+```mermaid
+sequenceDiagram
+    participant Server
+    Note left of Server: ghost.portal2.sr
+    Note right of Clients: SourceAutoRecord
+    participant Clients
+
+    Server->>Clients: message_packet (broadcast)
+```
+
 #### message_packet
 
-| Field             | Type                      | Description |
-| ----------------- | ------------------------- | ----------- |
-| [header](#header) | u8                        | `MESSAGE`   |
-| id                | u32                       |             |
-| message           | [std::string](#stdstring) |             |
+| Field             | Type                      | Description         |
+| ----------------- | ------------------------- | ------------------- |
+| [header](#header) | u8                        | `MESSAGE`           |
+| id                | u32                       | 0 if Server Message |
+| message           | [std::string](#stdstring) |                     |
 
 ### Countdown
 

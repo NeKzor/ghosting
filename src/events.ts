@@ -41,6 +41,7 @@ export type StartCountdown = {
 
 export type Disconnect = {
   type: EventType.Disconnect;
+  name: string;
 };
 
 export type DisconnectId = {
@@ -50,6 +51,7 @@ export type DisconnectId = {
 
 export type Ban = {
   type: EventType.Ban;
+  name: string;
 };
 
 export type BanId = {

@@ -14,4 +14,5 @@ export class State {
     postCommands: '',
     duration: 0,
   };
+  bannedIps = new Set<string>();
 }

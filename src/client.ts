@@ -347,10 +347,8 @@ const PacketHandler = {
   },
   [Header.MESSAGE]: (data: Uint8Array) => {
     const packet = MessagePacket.unpack(data);
-    const ghost = getGhostById(packet.id);
-    if (ghost) {
-      console.log(`${ghost.name}: ${packet.message}`);
-    }
+    const ghost = packet.id !== 0 ? getGhostById(packet.id) : undefined;
+    console.log(`${ghost?.name ?? 'SERVER'}${ghost?.spectator ? ' (spectator)' : ''}: ${packet.message}`);
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, isUdp: boolean) => {
     const step = data[COUNTDOWN_STEP_OFFSET + (isUdp ? UDP_HEADER_OFFSET : TCP_HEADER_OFFSET)]!;

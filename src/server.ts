@@ -154,14 +154,29 @@ const broadcast = async (packet: Uint8Array) => {
   }
 };
 
+const shouldBlockConnection = ({ hostname }: Deno.NetAddr) => {
+  // TODO: Disable this check in development
+  // const client = state.clients.find((client) => client.ip === hostname);
+  // if (client) {
+  //   return true;
+  // }
+
+  return state.bannedIps.has(hostname);
+};
+
 const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
+  const remote = conn.remoteAddr as Deno.NetAddr;
+
+  if (shouldBlockConnection(remote)) {
+    conn.close();
+    return;
+  }
+
   const packet = ConnectionPacket.unpack(data);
 
   if (!(packet.spectator ? state.acceptingSpectators : state.acceptingPlayers)) {
     return false;
   }
-
-  const remote = conn.remoteAddr as Deno.NetAddr;
 
   const client = new IClient(
     state.lastId++,
@@ -346,11 +361,13 @@ const PacketHandler = {
   },
   [Header.SPEEDRUN_FINISH]: async (data: Uint8Array) => {
     const { id, time } = SpeedrunFinishPacket.unpack(data);
-    await broadcast(SpeedrunFinishPacket.pack({
-      header: Header.SPEEDRUN_FINISH,
-      id,
-      time,
-    }));
+    await broadcast(
+      SpeedrunFinishPacket.pack({
+        header: Header.SPEEDRUN_FINISH,
+        id,
+        time,
+      }),
+    );
   },
   [Header.MODEL_CHANGE]: async (data: Uint8Array) => {
     const packet = ModelChangePacket.unpack(data);
@@ -358,11 +375,13 @@ const PacketHandler = {
     if (client) {
       client.model_name = packet.model_name;
 
-      await broadcast(ModelChangePacket.pack({
-        header: Header.MODEL_CHANGE,
-        id: client.id,
-        model_name: client.model_name,
-      }));
+      await broadcast(
+        ModelChangePacket.pack({
+          header: Header.MODEL_CHANGE,
+          id: client.id,
+          model_name: client.model_name,
+        }),
+      );
     }
   },
   [Header.COLOR_CHANGE]: async (data: Uint8Array) => {
@@ -371,15 +390,18 @@ const PacketHandler = {
     if (client) {
       client.color = packet.color;
 
-      await broadcast(ColorChangePacket.pack({
-        header: Header.COLOR_CHANGE,
-        id: client.id,
-        color: client.color,
-      }));
+      await broadcast(
+        ColorChangePacket.pack({
+          header: Header.COLOR_CHANGE,
+          id: client.id,
+          color: client.color,
+        }),
+      );
     }
   },
 };
 
+// CLI mode only. Emit and listen for messages between the main thread and the server thread.
 const emit = (message: ServerEvent) => self.postMessage(message);
 
 self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) => {
@@ -413,19 +435,29 @@ self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) =>
       break;
     }
     case EventType.Disconnect: {
-      // TODO
+      const client = state.clients.find(({ name }) => name === data.name);
+      client && await disconnectPlayer(client, 'kicked');
       break;
     }
     case EventType.DisconnectId: {
-      // TODO
+      const client = getClientById(data.id);
+      client && await disconnectPlayer(client, 'kicked');
       break;
     }
     case EventType.Ban: {
-      // TODO
+      const client = state.clients.find(({ name }) => name === data.name);
+      if (client) {
+        state.bannedIps.add(client.ip);
+        await disconnectPlayer(client, 'banned');
+      }
       break;
     }
     case EventType.BanId: {
-      // TODO
+      const client = getClientById(data.id);
+      if (client) {
+        state.bannedIps.add(client.ip);
+        await disconnectPlayer(client, 'banned');
+      }
       break;
     }
     case EventType.AcceptPlayers: {
@@ -445,7 +477,13 @@ self.addEventListener('message', async ({ data }: MessageEvent<CommandEvent>) =>
       break;
     }
     case EventType.ServerMessage: {
-      // TODO
+      await broadcast(
+        MessagePacket.pack({
+          header: Header.MESSAGE,
+          id: 0,
+          message: data.message,
+        }),
+      );
       break;
     }
   }
@@ -531,12 +569,14 @@ const main = async () => {
       const count = state.clients.length;
       const data = state.clients.map(({ id, data }) => ({ id, data }));
 
-      await broadcast(BulkUpdatePacket.pack({
-        header: Header.UPDATE,
-        id: 0,
-        count,
-        data,
-      }));
+      await broadcast(
+        BulkUpdatePacket.pack({
+          header: Header.UPDATE,
+          id: 0,
+          count,
+          data,
+        }),
+      );
 
       lastUpdate = now;
     }
