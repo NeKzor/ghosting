@@ -26,10 +26,14 @@ export class IVector {
   constructor(public x: number, public y: number, public z: number) {}
 }
 
+export class IQAngle {
+  constructor(public x: number, public y: number, public z: number) {}
+}
+
 export class IDataGhost {
   constructor(
     public position: IVector,
-    public view_angle: IVector,
+    public view_angle: IQAngle,
     public data: number,
   ) {}
 
@@ -111,6 +115,12 @@ export const Vector = new Struct({
   z: f32le,
 });
 
+export const QAngle = new Struct({
+  x: f32le,
+  y: f32le,
+  z: f32le,
+});
+
 export const Color = new Struct({
   r: u8,
   g: u8,
@@ -119,7 +129,7 @@ export const Color = new Struct({
 
 export const DataGhost = new Struct({
   position: Vector,
-  view_angle: Vector,
+  view_angle: QAngle,
   data: u8,
 });
 

@@ -18,6 +18,7 @@
     - [GhostEntity](#ghostentity)
     - [Color](#color)
     - [Vector](#vector)
+    - [QAngle](#qangle)
     - [DataGhost](#dataghost)
     - [DataGhostUpdate](#dataghostupdate)
 - [License](#license)
@@ -590,12 +591,20 @@ sequenceDiagram
 | y     | f32  |             |
 | z     | f32  |             |
 
+#### QAngle
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| x     | f32  |             |
+| y     | f32  |             |
+| z     | f32  |             |
+
 #### DataGhost
 
 | Field      | Type              | Description                |
 | ---------- | ----------------- | -------------------------- |
 | position   | [Vector](#vector) |                            |
-| view_angle | [Vector](#vector) |                            |
+| view_angle | [QAngle](#qangle) |                            |
 | data       | u8                | Encoded fields, see below. |
 
 ##### Data
