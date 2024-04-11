@@ -218,7 +218,7 @@ export const CountdownPacket = sf_packet({
   post_commands: std_string,
 });
 
-export const COUNTDOWN_STEP_OFFSET = TCP_HEADER_OFFSET + CountdownPacket.offsetOf('step');
+export const COUNTDOWN_STEP_OFFSET = CountdownPacket.offsetOf('step');
 
 export const ConfirmCountdownPacket = sf_packet({
   header: u8,

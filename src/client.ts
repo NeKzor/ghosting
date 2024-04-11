@@ -353,7 +353,7 @@ const PacketHandler = {
     }
   },
   [Header.COUNTDOWN]: async (data: Uint8Array, isUdp: boolean) => {
-    const step = data[COUNTDOWN_STEP_OFFSET]!;
+    const step = data[COUNTDOWN_STEP_OFFSET + (isUdp ? UDP_HEADER_OFFSET : TCP_HEADER_OFFSET)]!;
     if (step === 0) {
       const { duration, pre_commands, post_commands } = CountdownPacket.unpack(data);
 
