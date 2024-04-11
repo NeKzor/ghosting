@@ -2,6 +2,8 @@
 .kv
 .kv-shm
 .kv-wal
+ghosting
+ghosting.exe
 
 # Logs
 logs

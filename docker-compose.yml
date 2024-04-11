@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  server:
+    image: "ghosting"
+    build:
+      context: .
+      target: server
+    container_name: "ghosting"
+    restart: always
+    ports:
+      - "127.0.0.1:53000:53000"
+    volumes:
+      - ./logs:/logs:rw
+      - ./config.toml:/config.toml:rw

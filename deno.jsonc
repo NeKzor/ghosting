@@ -4,6 +4,10 @@
     "start": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs,src --allow-write=logs --allow-net src/main.ts",
     // Start server without the CLI.
     "server": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs --allow-write=logs --allow-net src/server.ts",
+    // Compile the server to a single binary for Linux.
+    "compile": "deno compile --output ghosting --target x86_64-unknown-linux-gnu --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs --allow-write=logs --allow-net src/server.ts",
+    // Compile the server to a single binary for Windows.
+    "compile:win": "deno compile --output ghosting.exe --target x86_64-pc-windows-msvc --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs --allow-write=logs --allow-net src/server.ts",
     // Simulate a client connection.
     "client": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml --allow-net src/client.ts",
     // Run format check, linter and type check.

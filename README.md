@@ -59,11 +59,12 @@
   - [ ] Fuzzing test
 - [ ] Testing
   - [x] Client + GhostServer
-  - [ ] Server + SourceAutoRecord
+  - [x] Server + SourceAutoRecord
+  - [ ] More tests
 - [ ] Deployment
-  - [ ] CI
-  - [ ] Docker image
-  - [ ] Server
+  - [x] CI
+  - [x] Docker image
+  - [ ] ghost.nekz.me
 
 ### Discoveries
 
