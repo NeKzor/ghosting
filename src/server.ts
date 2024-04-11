@@ -585,6 +585,6 @@ const main = async () => {
   }
 };
 
-log.info(`Server starting`);
+log.info(`Listening on ${hostname}:${port}`);
 
 await Promise.all([main(), listenTcp(), listenUdp()]);
