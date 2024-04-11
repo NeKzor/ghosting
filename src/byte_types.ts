@@ -138,27 +138,33 @@ export const sf_packet = <
   size = 1024,
 ): {
   layout: T;
-  pack: (value: V) => Uint8Array;
-  unpack: (data: Uint8Array) => { [K in keyof T]: InnerType<T[K]> };
+  pack: (value: V, isUdpPacket?: boolean) => Uint8Array;
+  unpack: (data: Uint8Array, isUdpPacket?: boolean) => { [K in keyof T]: InnerType<T[K]> };
   offsetOf: (field: keyof V) => number;
 } => {
   const input = new Struct(layout);
   return {
     layout,
-    pack: (value: V) => {
+    pack: (value: V, isUdpPacket = false) => {
       const buffer = new ArrayBuffer(size);
       const view = new DataView(buffer);
 
-      const options = { byteOffset: 4 };
-      input.writePacked(value, view, options);
+      if (isUdpPacket) {
+        const options = { byteOffset: 0 };
+        input.writePacked(value, view, options);
 
-      const length = options.byteOffset - 4;
-      view.setUint32(0, length, false);
+        return new Uint8Array(buffer.slice(0, options.byteOffset));
+      } else {
+        const options = { byteOffset: 4 };
+        input.writePacked(value, view, options);
 
-      return new Uint8Array(buffer.slice(0, options.byteOffset));
+        const length = options.byteOffset - 4;
+        view.setUint32(0, length, false);
+        return new Uint8Array(buffer.slice(0, options.byteOffset));
+      }
     },
-    unpack: (data: Uint8Array) => {
-      return input.readPacked(new DataView(data.buffer), { byteOffset: 4 });
+    unpack: (data: Uint8Array, isUdpPacket = false) => {
+      return input.readPacked(new DataView(data.buffer), { byteOffset: isUdpPacket ? 0 : 4 });
     },
     offsetOf: (field: keyof V) => {
       let offset = 0;

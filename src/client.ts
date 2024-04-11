@@ -25,6 +25,7 @@ import {
   PingPacket,
   SpeedrunFinishPacket,
   TCP_HEADER_OFFSET,
+  UDP_HEADER_OFFSET,
   UpdatePacket,
 } from './protocol.ts';
 
@@ -181,8 +182,8 @@ const listenTcp = async () => {
 const listenUdp = async () => {
   const data = new Uint8Array(PACKET_BUFFER_SIZE);
   while (await udp.receive(data)) {
-    const header = data[TCP_HEADER_OFFSET]!;
-    console.log({ header });
+    const header = data[UDP_HEADER_OFFSET]!;
+    //console.log({ data, header });
 
     if (header > Header.LAST) {
       console.error(`[udp] Invalid header value ${header}`);
@@ -209,23 +210,45 @@ const sendPing = async () => {
 };
 
 const sendPlayerData = async () => {
+  const ghost = state.ghostPool.at(0);
+
+  const data = (() => {
+    if (ghost) {
+      return {
+        position: {
+          x: ghost.data.position.x,
+          y: ghost.data.position.y - 64,
+          z: ghost.data.position.z,
+        },
+        view_angle: {
+          x: ghost.data.view_angle.x,
+          y: ghost.data.view_angle.y,
+          z: ghost.data.view_angle.z,
+        },
+        data: ghost.data.data,
+      };
+    } else {
+      return {
+        position: {
+          x: Math.floor(Math.random() * 100),
+          y: Math.floor(Math.random() * 100),
+          z: Math.floor(Math.random() * 100),
+        },
+        view_angle: {
+          x: Math.floor(Math.random() * 90),
+          y: Math.floor(Math.random() * 90),
+          z: 0,
+        },
+        data: 0b1100_0000,
+      };
+    }
+  })();
+
   const packet = UpdatePacket.pack({
     header: Header.UPDATE,
     id: state.id,
-    data: {
-      position: {
-        x: Math.floor(Math.random() * 100),
-        y: Math.floor(Math.random() * 100),
-        z: Math.floor(Math.random() * 100),
-      },
-      view_angle: {
-        x: Math.floor(Math.random() * 90),
-        y: Math.floor(Math.random() * 90),
-        z: 0,
-      },
-      data: 0b1100_0000,
-    },
-  });
+    data,
+  }, !tcp_only);
 
   if (tcp_only) {
     await tcp.write(packet);
@@ -306,7 +329,7 @@ const PacketHandler = {
     }
   },
   [Header.HEART_BEAT]: async (data: Uint8Array, isUdp: boolean) => {
-    const { token } = HeartBeatPacket.unpack(data);
+    const { token } = HeartBeatPacket.unpack(data, isUdp);
 
     //console.log({ token, transport: isUdp ? 'udp' : 'tcp' });
 
@@ -314,7 +337,7 @@ const PacketHandler = {
       header: Header.HEART_BEAT,
       id: state.id,
       token,
-    });
+    }, isUdp);
 
     if (isUdp) {
       await udp.send(packet, address);
@@ -340,7 +363,7 @@ const PacketHandler = {
         header: Header.COUNTDOWN,
         id: state.id,
         step: 1,
-      });
+      }, isUdp);
 
       if (isUdp) {
         await udp.send(packet, address);

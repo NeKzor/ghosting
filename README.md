@@ -120,33 +120,36 @@ SourceAutoRecord uses [SFML][sfml] which encodes integer types like `u16`, `u32`
 
 ### Packets
 
-Ths is the encoded representation of [sf::Packet][sf-packet] from SFML. Every TCP packet includes a field for the total
+This is the encoded representation of [sf::Packet][sf-packet] from SFML. Every TCP packet includes a field for the total
 length of the data.
 
 [sf-packet]: https://www.sfml-dev.org/documentation/2.6.1/classsf_1_1Packet.php
 
 | Field  | Type            | Description                       |
 | ------ | --------------- | --------------------------------- |
-| length | u32             | TCP only: length of `data` field. |
+| length | u32             | TCP only! Length of `data` field. |
 | data   | Header + Packet | Packet of type Connect, Ping etc. |
 
 ### Header
 
-| Name                                | Value |
-| ----------------------------------- | ----- |
-| NONE                                | 0     |
-| [PING](#ping)                       | 1     |
-| [CONNECT](#connect)                 | 2     |
-| [DISCONNECT](#disconnect)           | 3     |
-| STOP_SERVER                         | 4     |
-| [MAP_CHANGE](#map-change)           | 5     |
-| [HEART_BEAT](#heart-beat)           | 6     |
-| [MESSAGE](#message)                 | 7     |
-| [COUNTDOWN](#countdown)             | 8     |
-| [UPDATE](#update)                   | 9     |
-| [SPEEDRUN_FINISH](#speedrun-finish) | 10    |
-| [MODEL_CHANGE](#model-change)       | 11    |
-| [COLOR_CHANGE](#color-change)       | 12    |
+The header value (`u8`) defines the type of the packet. Since UDP is optional for clients the implementation is only
+required for `HEART_BEAT`, `COUNTDOWN` and `UPDATE` packets.
+
+| Name                                | Value | TCP | UDP |
+| ----------------------------------- | ----- | --- | --- |
+| NONE                                | 0     | ✅️  |     |
+| [PING](#ping)                       | 1     | ✅️  |     |
+| [CONNECT](#connect)                 | 2     | ✅️  |     |
+| [DISCONNECT](#disconnect)           | 3     | ✅️  |     |
+| STOP_SERVER                         | 4     | ✅️  |     |
+| [MAP_CHANGE](#map-change)           | 5     | ✅️  |     |
+| [HEART_BEAT](#heart-beat)           | 6     | ✅️  | ✅️  |
+| [MESSAGE](#message)                 | 7     | ✅️  |     |
+| [COUNTDOWN](#countdown)             | 8     | ✅️  | ✅️  |
+| [UPDATE](#update)                   | 9     | ✅️  | ✅️  |
+| [SPEEDRUN_FINISH](#speedrun-finish) | 10    | ✅️  |     |
+| [MODEL_CHANGE](#model-change)       | 11    | ✅️  |     |
+| [COLOR_CHANGE](#color-change)       | 12    | ✅️  |     |
 
 ### Connect
 

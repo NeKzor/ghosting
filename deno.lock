@@ -71,6 +71,7 @@
       "@std/log@0.221.0": {
         "integrity": "562cd3514c4e12767337fca8c5a4b8eed01c49f0e19551d34ea376b243d2c530",
         "dependencies": [
+          "jsr:@std/assert@^0.221.0",
           "jsr:@std/fs@^0.221.0",
           "jsr:@std/io@^0.221.0"
         ]

@@ -18,6 +18,6 @@ post_commands = ""
 name = "NeKz"
 model_name = "models/props/food_can/food_can_open.mdl"
 current_map = "sp_a1_intro1"
-tcp_only = true
+tcp_only = false
 color = { r = 1, g = 2, b = 3 }
 spectator = false

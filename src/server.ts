@@ -303,8 +303,8 @@ const PacketHandler = {
   [Header.MAP_CHANGE]: async (data: Uint8Array) => {
     await handleMapChange(data);
   },
-  [Header.HEART_BEAT]: (data: Uint8Array) => {
-    const packet = HeartBeatPacket.unpack(data);
+  [Header.HEART_BEAT]: (data: Uint8Array, isUdp: boolean) => {
+    const packet = HeartBeatPacket.unpack(data, isUdp);
     const client = getClientById(packet.id);
     if (client?.heartbeat_token === packet.token) {
       client.returned_heartbeat = true;
@@ -332,11 +332,11 @@ const PacketHandler = {
         header: Header.COUNTDOWN,
         id: 0,
         step: 1,
-      }),
+      }, isUdp),
     );
   },
-  [Header.UPDATE]: (data: Uint8Array) => {
-    const packet = UpdatePacket.unpack(data);
+  [Header.UPDATE]: (data: Uint8Array, isUdp: boolean) => {
+    const packet = UpdatePacket.unpack(data, isUdp);
     const client = getClientById(packet.id);
     if (client) {
       client.data.position = packet.data.position;
@@ -510,7 +510,7 @@ const main = async () => {
                 header: Header.HEART_BEAT,
                 id: client.id,
                 token: client.heartbeat_token,
-              }),
+              }, true),
               {
                 transport: 'udp',
                 hostname: client.ip,
