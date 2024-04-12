@@ -14,13 +14,6 @@
   - [Packets](#packets)
   - [Header](#header)
   - [Structs](#structs)
-    - [std::string](#stdstring)
-    - [GhostEntity](#ghostentity)
-    - [Color](#color)
-    - [Vector](#vector)
-    - [QAngle](#qangle)
-    - [DataGhost](#dataghost)
-    - [DataGhostUpdate](#dataghostupdate)
 - [License](#license)
 
 ## Status
@@ -82,9 +75,10 @@
 
 - Secure protocol
 - Authentication
-- Admin role
+- Role system
 - Server plugins
-- UI
+- SSR?
+- Client-side scripting?
 
 ## Development
 
@@ -94,9 +88,12 @@
 
 ### Steps
 
-- Start the server with CLI: `deno task start`
-- Start the server only: `deno task server`
-- Connect to the server: `deno task client --name Player`
+- Start the server with:
+  - `deno task start` with CLI
+  - `deno task server` without CLI
+- Connect to the server with:
+  - `ghost_connect 0.0.0.0` with SAR
+  - `deno task client --name Player` without SAR
 
 ### Config
 
