@@ -4,6 +4,7 @@
 .kv-wal
 ghosting
 ghosting.exe
+ghost_server.log
 
 # Logs
 logs

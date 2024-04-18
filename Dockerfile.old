@@ -1,0 +1,33 @@
+ARG UBUNTU_VERSION=22.04
+ARG PORT=53000
+ARG LOG_FILE=ghost_server.log
+
+FROM ubuntu:$UBUNTU_VERSION AS build
+
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y git make g++ libsfml-dev
+
+RUN git clone --depth=1 --branch master https://github.com/p2sr/GhostServer.git
+
+WORKDIR GhostServer
+
+RUN echo "CXX=g++" > config.mk
+RUN echo "LDFLAGS_CLI+=-lsfml-network -lsfml-system" >> config.mk
+RUN make -j8 ghost_server_cli
+
+FROM ubuntu:$UBUNTU_VERSION AS old_server
+
+ARG PORT
+ARG LOG_FILE
+
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y libsfml-network2.5
+
+COPY --from=build /GhostServer/ghost_server_cli ghost_server
+
+EXPOSE $PORT
+
+ENV PORT=$PORT
+ENV LOG_FILE=$LOG_FILE
+
+CMD ./ghost_server ${PORT} ${LOG_FILE}

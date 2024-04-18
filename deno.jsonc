@@ -13,7 +13,21 @@
     // Run format check, linter and type check.
     "check": "deno fmt --check && deno lint && deno task check:types",
     // Run type check only.
-    "check:types": "deno check --no-lock src/**/*.ts"
+    "check:types": "deno check --no-lock src/**/*.ts",
+    // Build Docker image.
+    "build": "docker build .",
+    // Build Docker image containing old GhostServer.
+    "build:old": "docker build --tag=p2sr/ghost-server:latest -f Dockerfile.old .",
+    // Start old GhostServer.
+    "old": "touch ghost_server.log && docker run --name ghost-server -p 53000:53000 -v ./ghost_server.log:/ghost_server.log:rw --rm -ti p2sr/ghost-server:latest",
+    // Stop old GhostServer.
+    "old:stop": "docker stop ghost-server && docker rm ghost-server",
+    // Debug old GhostServer.
+    "old:debug": "docker exec -ti ghost-server /bin/bash",
+    // Start Docker container.
+    "up": "docker compose up -d",
+    // Stop Docker container.
+    "down": "docker compose down"
   },
   "imports": {
     "@cliffy/ansi": "jsr:@cliffy/ansi@^1.0.0-rc.4",
