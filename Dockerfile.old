@@ -11,6 +11,10 @@ RUN git clone --depth=1 --branch master https://github.com/p2sr/GhostServer.git
 
 WORKDIR GhostServer
 
+RUN git checkout a9404b20cdf33d81c35d6a275031ee72b3058208
+COPY ghost_server.patch ghost_server.patch
+RUN git apply ghost_server.patch
+
 RUN echo "CXX=g++" > config.mk
 RUN echo "LDFLAGS_CLI+=-lsfml-network -lsfml-system" >> config.mk
 RUN make -j8 ghost_server_cli

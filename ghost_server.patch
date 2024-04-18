@@ -1,0 +1,24 @@
+diff --git a/GhostServer/networkmanager.cpp b/GhostServer/networkmanager.cpp
+index b47f794..74201db 100644
+--- a/GhostServer/networkmanager.cpp
++++ b/GhostServer/networkmanager.cpp
+@@ -144,7 +144,7 @@ bool NetworkManager::StartServer(const int port)
+     this->serverThread = std::thread(&NetworkManager::RunServer, this);
+     this->serverThread.detach();
+ 
+-    GHOST_LOG("Server started on " + this->serverIP.toString() + " (public IP: " + sf::IpAddress::getPublicAddress().toString() + ") on port " + std::to_string(this->serverPort));
++    GHOST_LOG("Server started on " + this->serverIP.toString() + " on port " + std::to_string(this->serverPort));
+ 
+     return true;
+ }
+@@ -212,10 +212,6 @@ void NetworkManager::StartCountdown(const std::string preCommands, const std::st
+ 
+ bool NetworkManager::ShouldBlockConnection(const sf::IpAddress& ip)
+ {
+-    if (std::find_if(this->clients.begin(), this->clients.end(), [&ip](const Client& c) { return ip == c.IP; }) != this->clients.end()) {
+-        return true;
+-    }
+-
+     for (auto banned : this->bannedIps) {
+         if (ip == banned) return true;
+     }
