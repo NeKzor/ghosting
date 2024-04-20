@@ -1,5 +1,5 @@
 diff --git a/GhostServer/networkmanager.cpp b/GhostServer/networkmanager.cpp
-index b47f794..74201db 100644
+index b47f794..c18da6f 100644
 --- a/GhostServer/networkmanager.cpp
 +++ b/GhostServer/networkmanager.cpp
 @@ -144,7 +144,7 @@ bool NetworkManager::StartServer(const int port)
@@ -11,6 +11,15 @@ index b47f794..74201db 100644
  
      return true;
  }
+@@ -173,7 +173,7 @@ void NetworkManager::DisconnectPlayer(Client& c, const char *reason)
+     int id = 0;
+     int toErase = -1;
+     for (; id < this->clients.size(); ++id) {
+-        if (this->clients[id].IP != c.IP) {
++        if (this->clients[id].ID != c.ID) {
+             this->clients[id].tcpSocket->send(packet);
+         } else {
+             GHOST_LOG("Player " + this->clients[id].name + " has disconnected! Reason: " + reason);
 @@ -212,10 +212,6 @@ void NetworkManager::StartCountdown(const std::string preCommands, const std::st
  
  bool NetworkManager::ShouldBlockConnection(const sf::IpAddress& ip)
