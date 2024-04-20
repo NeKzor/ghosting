@@ -106,7 +106,7 @@ port = 53000
 
 [logging]
 level = "debug" # debug, info, warn, error, critical
-console = true # might want to turn it of in CLI mode
+console = true # might want to turn it off in CLI mode
 file = true
 filename = "logs/server.log"
 
