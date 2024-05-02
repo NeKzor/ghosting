@@ -114,7 +114,7 @@ const tcp = await (async () => {
 const udp = (() => {
   try {
     return Deno.listenDatagram({
-      hostname,
+      hostname: '0.0.0.0',
       port: (tcp.localAddr as Deno.NetAddr).port,
       transport: 'udp',
     });
