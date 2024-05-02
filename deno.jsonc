@@ -10,6 +10,8 @@
     "compile:win": "deno compile --output ghosting.exe --target x86_64-pc-windows-msvc --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml,logs --allow-write=logs --allow-net src/server.ts",
     // Simulate a client connection. The --name option is required.
     "client": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml --allow-net src/client.ts --address 0.0.0.0 --port 53000",
+    // Simulate a client connection to prod server.
+    "client:prod": "DENO_FUTURE=1 deno run --no-prompt --unstable-net --allow-hrtime --allow-read=config.toml --allow-net src/client.ts --address ghosting.portal2.sr --port 53000",
     // Run format check, linter and type check.
     "check": "deno fmt --check && deno lint && deno task check:types",
     // Run type check only.
@@ -52,6 +54,8 @@
     "proseWrap": "preserve"
   },
   "compilerOptions": {
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   }
 }
