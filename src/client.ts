@@ -548,11 +548,12 @@ try {
       );
     },
     map_change: async () => {
+      const map_name: string = await Input.prompt('Map to change to:');
       await tcp.write(
         MapChangePacket.pack({
           header: Header.MAP_CHANGE,
           id: state.id,
-          map_name: 'sp_a1_intro2',
+          map_name,
           ticks: Math.floor(Math.random() * 2) ? 0xffffffff : 123,
           ticks_total: 456_789,
         }),
@@ -597,7 +598,9 @@ try {
         ModelChangePacket.pack({
           header: Header.MODEL_CHANGE,
           id: state.id,
-          model_name: 'models/props/test.mdl',
+          model_name: Math.floor(Math.random() * 2)
+            ? 'models/props/prop_portalgun.mdl'
+            : 'models/props/food_can/food_can_open.mdl',
         }),
       );
     },
