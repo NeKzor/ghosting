@@ -66,6 +66,8 @@ export class IColor {
 }
 
 export class IClient {
+  public udpAddr: Deno.NetAddr;
+
   constructor(
     public id: number,
     public ip: string,
@@ -81,7 +83,13 @@ export class IClient {
     public returned_heartbeat: boolean,
     public missed_last_heartbeat: boolean,
     public spectator: boolean,
-  ) {}
+  ) {
+    this.udpAddr = {
+      transport: 'udp',
+      hostname: ip,
+      port,
+    };
+  }
 }
 
 export class IGhostEntity {

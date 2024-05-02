@@ -544,11 +544,7 @@ const main = async () => {
                 id: client.id,
                 token: client.heartbeat_token,
               }, true),
-              {
-                transport: 'udp',
-                hostname: client.ip,
-                port: client.port,
-              },
+              client.udpAddr,
             );
           } catch (err) {
             if (!(err instanceof Deno.errors.BadResource)) {
