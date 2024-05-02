@@ -115,7 +115,7 @@ const udp = (() => {
   try {
     return Deno.listenDatagram({
       hostname: '0.0.0.0',
-      port: (tcp.localAddr as Deno.NetAddr).port,
+      port: tcp.localAddr.port,
       transport: 'udp',
     });
   } catch (err) {

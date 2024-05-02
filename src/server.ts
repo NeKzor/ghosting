@@ -68,15 +68,13 @@ const listenTcp = async () => {
 
 const listenUdp = async () => {
   for await (const conn of udp) {
-    handleUdpConnection(conn).catch(log.error);
+    handleUdpConnection(conn as [Uint8Array, Deno.NetAddr]).catch(log.error);
   }
 };
 
-const handleTcpConnection = async (conn: Deno.Conn) => {
+const handleTcpConnection = async (conn: Deno.Conn<Deno.NetAddr>) => {
   try {
-    const remote = conn.remoteAddr as Deno.NetAddr;
-
-    log.debug(`New TCP connection ${remote.hostname}:${remote.port}`);
+    log.debug(`New TCP connection ${conn.remoteAddr.hostname}:${conn.remoteAddr.port}`);
 
     const connection = new Uint8Array(PACKET_BUFFER_SIZE);
     await conn.read(connection);
@@ -112,7 +110,7 @@ const handleTcpConnection = async (conn: Deno.Conn) => {
   }
 };
 
-const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.Addr]) => {
+const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.NetAddr]) => {
   try {
     const header = data[UDP_HEADER_OFFSET]!;
     const id = data[UDP_ID_OFFSET]!;
@@ -125,8 +123,7 @@ const handleUdpConnection = async ([data, remoteAddr]: [Uint8Array, Deno.Addr]) 
 
     const client = getClientById(id);
     if (client) {
-      const remote = remoteAddr as Deno.NetAddr;
-      client.port = remote.port;
+      client.port = remoteAddr.port;
     }
 
     const handler = PacketHandler[header as Header];
@@ -164,10 +161,8 @@ const shouldBlockConnection = ({ hostname }: Deno.NetAddr) => {
   return state.bannedIps.has(hostname);
 };
 
-const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
-  const remote = conn.remoteAddr as Deno.NetAddr;
-
-  if (shouldBlockConnection(remote)) {
+const checkConnection = async (conn: Deno.Conn<Deno.NetAddr>, data: Uint8Array) => {
+  if (shouldBlockConnection(conn.remoteAddr)) {
     conn.close();
     return;
   }
@@ -180,8 +175,8 @@ const checkConnection = async (conn: Deno.Conn, data: Uint8Array) => {
 
   const client = new IClient(
     state.lastId++,
-    remote.hostname,
-    remote.port,
+    conn.remoteAddr.hostname,
+    conn.remoteAddr.port,
     packet.name,
     new IDataGhost(
       packet.data.position,
