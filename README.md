@@ -10,6 +10,7 @@
   - [Steps](#steps)
   - [Config](#config)
 - [Production](#production)
+- [Plugins (TODO)](#plugins-todo)
 - [Protocol](#protocol)
   - [Packets](#packets)
   - [Header](#header)
@@ -49,17 +50,19 @@
   - [x] accept_spectators
   - [x] refuse_spectators
   - [x] server_msg
-- [ ] Add useful client commands
-  - [ ] Smoke test
-  - [ ] Fuzzing test
+- [x] Deployment
+  - [x] CI
+  - [x] Docker image
+  - [x] ghosting.portal2.sr
 - [ ] Testing
   - [x] Client + GhostServer
   - [x] Server + SourceAutoRecord
-  - [ ] More tests
-- [ ] Deployment
-  - [x] CI
-  - [x] Docker image
-  - [ ] ghost.nekz.me
+  - [ ] Test on prod server
+- [ ] Server as API/library
+  - [ ] Plugin system
+  - [ ] Server-side hooks
+  - [ ] Publish package
+  - [ ] Examples
 
 ### Discoveries
 
@@ -75,8 +78,8 @@
 
 - Secure protocol
 - Authentication
-- Role system
-- Server plugins
+- Role system (via plugins)
+- Server plugins (on TODO list)
 - SSR?
 - Client-side scripting?
 
@@ -138,6 +141,60 @@ services:
     volumes:
       - ./logs:/logs:rw
       - ./config.toml:/config.toml:rw
+```
+
+## Plugins (TODO)
+
+This project also comes with a package that allows developers to write server plugins.
+
+> [!WARNING]
+> WIP. Subject to change.
+
+```ts
+import {
+  command,
+  IClient,
+  on,
+  Plugin,
+  ServerEvent,
+} from 'jsr:@p2sr/ghosting';
+
+export class ExamplePlugin extends Plugin {
+  name = 'Example Plugin';
+  version = '1.0.0';
+  authors = ['NeKz'];
+  license = 'MIT';
+
+  @command('ping', 'Ping the server!')
+  async onPing() {
+    await this.respond('pong!');
+  }
+
+  @command('dm <player> <message...>', 'DM a player!')
+  async onDirectMessage(
+    client: IClient,
+    message: string,
+  ) {
+    await this.respondToClient(client, message);
+  }
+
+  @on(ServerEvent.ClientMessage)
+  async onClientMessage(message: string) {
+    // Use own command handler
+    const [command, ..._rest] = message.split(' ');
+
+    switch (command) {
+      case '/ping': {
+        await this.respond('pong');
+        break;
+      }
+      case '/dm': {
+        // ...
+        break;
+      }
+    }
+  }
+}
 ```
 
 ## Protocol
